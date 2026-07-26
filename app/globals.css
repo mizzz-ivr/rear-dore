@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(190, 242, 100, 0.11), transparent 34rem),
+    radial-gradient(circle at 100% 75%, rgba(113, 113, 122, 0.13), transparent 30rem),
+    var(--background);
+  font-family: Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+label:has(input:focus-visible) {
+  outline: 3px solid rgba(190, 242, 100, 0.75);
+  outline-offset: 3px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 3.5rem;
+  border-radius: 1rem;
+  padding: 0.9rem 1.25rem;
+  font-weight: 800;
+  transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease;
+}
+
+.primary-button {
+  border: 1px solid #bef264;
+  color: #18181b;
+  background: #bef264;
+}
+
+.secondary-button {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fafafa;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.primary-button:hover:not(:disabled),
+.secondary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.choice-card {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  gap: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.035);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.choice-card:hover {
+  border-color: rgba(190, 242, 100, 0.45);
+  background: rgba(190, 242, 100, 0.06);
+}
+
+.choice-card-selected {
+  border-color: rgba(190, 242, 100, 0.85);
+  background: rgba(190, 242, 100, 0.11);
+}
+
+.result-shell {
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

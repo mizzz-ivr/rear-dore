@@ -1,0 +1,47 @@
+name: 品質チェック
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint・型・テスト・ビルド
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SITE_URL: https://reardore.ivrm.jp
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.jsをセットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 依存関係をインストール
+        run: npm install --no-audit --no-fund
+
+      - name: ESLintを実行
+        run: npm run lint
+
+      - name: 型チェックを実行
+        run: npm run typecheck
+
+      - name: 単体テストを実行
+        run: npm run test
+
+      - name: 本番ビルドを実行
+        run: npm run build
