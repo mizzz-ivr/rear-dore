@@ -44,3 +44,11 @@ jobs:
 
       - name: 本番ビルドを実行
         run: npm run build
+
+      - name: 依存関係ロックを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 1
