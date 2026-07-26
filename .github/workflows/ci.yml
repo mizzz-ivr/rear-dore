@@ -34,56 +34,13 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: ESLintを実行
-        id: lint
-        continue-on-error: true
-        run: npm run lint > lint.log 2>&1
+        run: npm run lint
 
       - name: 型チェックを実行
-        id: typecheck
-        continue-on-error: true
-        run: npm run typecheck > typecheck.log 2>&1
+        run: npm run typecheck
 
       - name: 単体テストを実行
-        id: test
-        continue-on-error: true
-        run: npm run test > test.log 2>&1
+        run: npm run test
 
       - name: 本番ビルドを実行
-        id: build
-        continue-on-error: true
-        run: npm run build > build.log 2>&1
-
-      - name: 検証ログを保存
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quality-check-logs
-          path: "*.log"
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: 依存関係ロックを保存
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: 検証結果を判定
-        if: always()
-        env:
-          LINT_OUTCOME: ${{ steps.lint.outcome }}
-          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
-          TEST_OUTCOME: ${{ steps.test.outcome }}
-          BUILD_OUTCOME: ${{ steps.build.outcome }}
-        run: |
-          printf 'lint=%s\ntypecheck=%s\ntest=%s\nbuild=%s\n' \
-            "$LINT_OUTCOME" "$TYPECHECK_OUTCOME" "$TEST_OUTCOME" "$BUILD_OUTCOME"
-
-          if [[ "$LINT_OUTCOME" != "success" || \
-                "$TYPECHECK_OUTCOME" != "success" || \
-                "$TEST_OUTCOME" != "success" || \
-                "$BUILD_OUTCOME" != "success" ]]; then
-            exit 1
-          fi
+        run: npm run build
