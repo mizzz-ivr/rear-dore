@@ -67,21 +67,18 @@ export default function GlobalErrorPage({ reset }: GlobalErrorPageProps) {
               >
                 もう一度試す
               </button>
-              <a
-                href="/"
+              <button
+                type="button"
+                onClick={() => window.location.assign("/")}
                 style={{
                   ...buttonStyle,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   border: "1px solid rgba(255, 255, 255, 0.14)",
                   color: "#fafafa",
                   background: "rgba(255, 255, 255, 0.05)",
-                  textDecoration: "none",
                 }}
               >
                 トップページへ戻る
-              </a>
+              </button>
             </div>
           </section>
         </main>
