@@ -19,9 +19,13 @@ export default function ErrorPage({ reset }: ErrorPageProps) {
           <button type="button" className="primary-button" onClick={reset}>
             もう一度試す
           </button>
-          <a href="/" className="secondary-button inline-flex items-center justify-center">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => window.location.assign("/")}
+          >
             最初からやり直す
-          </a>
+          </button>
         </div>
       </section>
     </main>
