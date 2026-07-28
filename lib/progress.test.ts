@@ -3,6 +3,7 @@ import { calculateResult, DEFAULT_QUESTION_SET } from "./game";
 import {
   createDailyProgress,
   getJapanDateKey,
+  getMillisecondsUntilNextJapanDay,
   restoreDailyProgress,
   serializeDailyProgress,
 } from "./progress";
@@ -29,6 +30,27 @@ describe("getJapanDateKey", () => {
 
   it("不正な日時を拒否する", () => {
     expect(() => getJapanDateKey(new Date(Number.NaN))).toThrow(RangeError);
+  });
+});
+
+describe("getMillisecondsUntilNextJapanDay", () => {
+  it("日本時間0時の直前から残り時間を計算する", () => {
+    expect(getMillisecondsUntilNextJapanDay(new Date("2026-07-27T14:59:59.999Z"))).toBe(1);
+  });
+
+  it("日本時間0時ちょうどは翌日まで24時間とする", () => {
+    expect(getMillisecondsUntilNextJapanDay(new Date("2026-07-27T15:00:00.000Z"))).toBe(86_400_000);
+  });
+
+  it.each([
+    ["月末", "2026-07-31T14:59:59.000Z"],
+    ["年末", "2026-12-31T14:59:59.000Z"],
+  ])("%sでも翌日0時までの時間を計算する", (_label, value) => {
+    expect(getMillisecondsUntilNextJapanDay(new Date(value))).toBe(1_000);
+  });
+
+  it("不正な日時を拒否する", () => {
+    expect(() => getMillisecondsUntilNextJapanDay(new Date(Number.NaN))).toThrow(RangeError);
   });
 });
 
