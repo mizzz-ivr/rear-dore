@@ -12,12 +12,21 @@ import {
   createDailyProgress,
   DAILY_PROGRESS_STORAGE_KEY,
   getJapanDateKey,
+  getMillisecondsUntilNextJapanDay,
   restoreDailyProgress,
   serializeDailyProgress,
 } from "@/lib/progress";
 
 function formatPercentage(value: number): string {
   return `${value.toFixed(value < 10 ? 1 : 0)}%`;
+}
+
+function clearStoredDailyProgress(): void {
+  try {
+    window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
+  } catch {
+    // localStorageを利用できない環境でも、画面状態の更新は継続する。
+  }
 }
 
 function StorageLoadingState() {
@@ -37,6 +46,32 @@ function StorageLoadingState() {
   );
 }
 
+type DayChangeNoticeProps = Readonly<{
+  onDismiss: () => void;
+}>;
+
+function DayChangeNotice({ onDismiss }: DayChangeNoticeProps) {
+  return (
+    <div
+      className="flex items-start justify-between gap-4 rounded-2xl border border-lime-300/25 bg-lime-300/8 px-4 py-3"
+      role="status"
+      aria-live="polite"
+    >
+      <div>
+        <p className="font-semibold text-lime-200">日付が変わりました</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-300">本日の新しい5問へ自動で切り替えました。</p>
+      </div>
+      <button
+        type="button"
+        className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-zinc-300 hover:bg-white/5 hover:text-white"
+        onClick={onDismiss}
+      >
+        閉じる
+      </button>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [questionSet, setQuestionSet] = useState(DEFAULT_QUESTION_SET);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -45,6 +80,7 @@ export default function HomePage() {
   const [completed, setCompleted] = useState(false);
   const [dailyDateKey, setDailyDateKey] = useState<string | null>(null);
   const [storageReady, setStorageReady] = useState(false);
+  const [dayChangeNoticeVisible, setDayChangeNoticeVisible] = useState(false);
 
   const questions = questionSet.questions;
   const question = questions[questionIndex];
@@ -114,6 +150,60 @@ export default function HomePage() {
     }
   }, [answers, completed, dailyDateKey, questionIndex, questionSet.id, questions, storageReady]);
 
+  useEffect(() => {
+    if (!storageReady || !dailyDateKey) return;
+
+    let activeDateKey = dailyDateKey;
+    let timerId: number | undefined;
+
+    function switchToCurrentDay(): boolean {
+      const currentDateKey = getJapanDateKey();
+      if (currentDateKey === activeDateKey) return false;
+
+      activeDateKey = currentDateKey;
+      const currentQuestionSet = getDailyQuestionSet(currentDateKey);
+
+      clearStoredDailyProgress();
+      setQuestionSet(currentQuestionSet);
+      setQuestionIndex(0);
+      setSelectedChoiceId(null);
+      setAnswers([]);
+      setCompleted(false);
+      setDailyDateKey(currentDateKey);
+      setDayChangeNoticeVisible(true);
+
+      return true;
+    }
+
+    function scheduleNextDayCheck(): void {
+      timerId = window.setTimeout(() => {
+        const switched = switchToCurrentDay();
+
+        if (!switched) {
+          scheduleNextDayCheck();
+        }
+      }, getMillisecondsUntilNextJapanDay() + 250);
+    }
+
+    function handleVisibilityChange(): void {
+      if (document.visibilityState === "visible") {
+        switchToCurrentDay();
+      }
+    }
+
+    scheduleNextDayCheck();
+    window.addEventListener("focus", switchToCurrentDay);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timerId !== undefined) {
+        window.clearTimeout(timerId);
+      }
+      window.removeEventListener("focus", switchToCurrentDay);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [dailyDateKey, storageReady]);
+
   function confirmAnswer() {
     if (!selectedChoice || currentAnswer) return;
 
@@ -137,12 +227,7 @@ export default function HomePage() {
     const shouldRestart = window.confirm("今日の回答記録を消して、最初から遊び直しますか？");
     if (!shouldRestart) return;
 
-    try {
-      window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
-    } catch {
-      // 削除できない場合も、現在の画面状態は初期化する。
-    }
-
+    clearStoredDailyProgress();
     setQuestionIndex(0);
     setSelectedChoiceId(null);
     setAnswers([]);
@@ -225,7 +310,7 @@ export default function HomePage() {
           </div>
 
           <p className="text-center text-xs leading-5 text-zinc-500">
-            回答はこのブラウザに、日本時間の当日分として保存されています。
+            回答はこのブラウザに、日本時間の当日分として保存されます。問題は毎日0時に自動更新されます。
           </p>
         </section>
       </main>
@@ -247,6 +332,10 @@ export default function HomePage() {
             {questionIndex + 1} / {questions.length}
           </p>
         </header>
+
+        {dayChangeNoticeVisible && (
+          <DayChangeNotice onDismiss={() => setDayChangeNoticeVisible(false)} />
+        )}
 
         <div aria-label="回答進捗" className="h-2 overflow-hidden rounded-full bg-white/8">
           <div className="h-full rounded-full bg-lime-300 transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
@@ -325,7 +414,7 @@ export default function HomePage() {
         </article>
 
         <p className="text-center text-xs leading-5 text-zinc-500">
-          回答するまで全体の分布は表示されません。回答途中の記録はこのブラウザに保存されます。
+          回答するまで全体の分布は表示されません。問題は毎日0時（日本時間）に自動更新されます。
         </p>
       </section>
     </main>
