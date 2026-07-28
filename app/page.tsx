@@ -13,6 +13,7 @@ import {
   DAILY_PROGRESS_STORAGE_KEY,
   getJapanDateKey,
   getMillisecondsUntilNextJapanDay,
+  resolveExternalProgressUpdate,
   restoreDailyProgress,
   serializeDailyProgress,
 } from "@/lib/progress";
@@ -72,6 +73,32 @@ function DayChangeNotice({ onDismiss }: DayChangeNoticeProps) {
   );
 }
 
+type CrossTabSyncNoticeProps = Readonly<{
+  onDismiss: () => void;
+}>;
+
+function CrossTabSyncNotice({ onDismiss }: CrossTabSyncNoticeProps) {
+  return (
+    <div
+      className="flex items-start justify-between gap-4 rounded-2xl border border-sky-300/25 bg-sky-300/8 px-4 py-3"
+      role="status"
+      aria-live="polite"
+    >
+      <div>
+        <p className="font-semibold text-sky-200">別のタブと同期しました</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-300">このブラウザで行われた最新の回答操作を反映しました。</p>
+      </div>
+      <button
+        type="button"
+        className="shrink-0 rounded-lg px-2 py-1 text-sm font-semibold text-zinc-300 hover:bg-white/5 hover:text-white"
+        onClick={onDismiss}
+      >
+        閉じる
+      </button>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [questionSet, setQuestionSet] = useState(DEFAULT_QUESTION_SET);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -81,6 +108,7 @@ export default function HomePage() {
   const [dailyDateKey, setDailyDateKey] = useState<string | null>(null);
   const [storageReady, setStorageReady] = useState(false);
   const [dayChangeNoticeVisible, setDayChangeNoticeVisible] = useState(false);
+  const [crossTabNoticeVisible, setCrossTabNoticeVisible] = useState(false);
 
   const questions = questionSet.questions;
   const question = questions[questionIndex];
@@ -153,6 +181,42 @@ export default function HomePage() {
   useEffect(() => {
     if (!storageReady || !dailyDateKey) return;
 
+    function handleStorage(event: StorageEvent): void {
+      if (event.key !== DAILY_PROGRESS_STORAGE_KEY) return;
+      if (getJapanDateKey() !== dailyDateKey) return;
+
+      const update = resolveExternalProgressUpdate(
+        event.newValue,
+        dailyDateKey,
+        questionSet.id,
+        questions,
+      );
+
+      if (update.type === "ignore") return;
+
+      if (update.type === "reset") {
+        setQuestionIndex(0);
+        setSelectedChoiceId(null);
+        setAnswers([]);
+        setCompleted(false);
+      } else {
+        setAnswers(update.progress.answers);
+        setQuestionIndex(update.progress.questionIndex);
+        setSelectedChoiceId(update.progress.selectedChoiceId);
+        setCompleted(update.progress.completed);
+      }
+
+      setDayChangeNoticeVisible(false);
+      setCrossTabNoticeVisible(true);
+    }
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [dailyDateKey, questionSet.id, questions, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady || !dailyDateKey) return;
+
     let activeDateKey = dailyDateKey;
     let timerId: number | undefined;
 
@@ -170,6 +234,7 @@ export default function HomePage() {
       setAnswers([]);
       setCompleted(false);
       setDailyDateKey(currentDateKey);
+      setCrossTabNoticeVisible(false);
       setDayChangeNoticeVisible(true);
 
       return true;
@@ -232,6 +297,7 @@ export default function HomePage() {
     setSelectedChoiceId(null);
     setAnswers([]);
     setCompleted(false);
+    setCrossTabNoticeVisible(false);
   }
 
   async function shareResult() {
@@ -270,6 +336,10 @@ export default function HomePage() {
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">レアどれ？</h1>
             <p className="mt-2 text-sm text-zinc-400">本日の5問・{questionSet.title}</p>
           </header>
+
+          {crossTabNoticeVisible && (
+            <CrossTabSyncNotice onDismiss={() => setCrossTabNoticeVisible(false)} />
+          )}
 
           <div className="result-shell overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6 sm:p-10">
             <p className="text-center text-sm text-zinc-400">今日のレア回答力</p>
@@ -335,6 +405,10 @@ export default function HomePage() {
 
         {dayChangeNoticeVisible && (
           <DayChangeNotice onDismiss={() => setDayChangeNoticeVisible(false)} />
+        )}
+
+        {crossTabNoticeVisible && (
+          <CrossTabSyncNotice onDismiss={() => setCrossTabNoticeVisible(false)} />
         )}
 
         <div aria-label="回答進捗" className="h-2 overflow-hidden rounded-full bg-white/8">
