@@ -75,7 +75,12 @@ function parseEntry(value: unknown): PlayHistoryEntry | null {
   if (typeof value.dateKey !== "string" || parseDateKey(value.dateKey) === null) return null;
   if (!isTrimmedText(value.questionSetId, 100)) return null;
   if (!isTrimmedText(value.questionSetTitle, 100)) return null;
-  if (!Number.isSafeInteger(value.totalScore) || value.totalScore < 0 || value.totalScore > MAX_TOTAL_SCORE) {
+  if (
+    typeof value.totalScore !== "number" ||
+    !Number.isSafeInteger(value.totalScore) ||
+    value.totalScore < 0 ||
+    value.totalScore > MAX_TOTAL_SCORE
+  ) {
     return null;
   }
   if (!isTrimmedText(value.playerTitle, 100)) return null;
