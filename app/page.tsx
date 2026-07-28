@@ -1,15 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   calculateResult,
   getPlayerTitle,
   questions,
   type AnswerResult,
 } from "@/lib/game";
+import {
+  createDailyProgress,
+  DAILY_PROGRESS_STORAGE_KEY,
+  getJapanDateKey,
+  restoreDailyProgress,
+  serializeDailyProgress,
+} from "@/lib/progress";
 
 function formatPercentage(value: number): string {
   return `${value.toFixed(value < 10 ? 1 : 0)}%`;
+}
+
+function StorageLoadingState() {
+  return (
+    <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-10" aria-busy="true">
+      <section className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+        <header>
+          <p className="text-xs font-medium tracking-[0.22em] text-lime-300">RARE DORE?</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">レアどれ？</h1>
+        </header>
+        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 text-center sm:p-10" role="status">
+          <p className="font-semibold">今日の記録を確認しています</p>
+          <p className="mt-2 text-sm text-zinc-400">回答途中の場合は、続きから再開します。</p>
+        </div>
+      </section>
+    </main>
+  );
 }
 
 export default function HomePage() {
@@ -17,6 +41,8 @@ export default function HomePage() {
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<AnswerResult[]>([]);
   const [completed, setCompleted] = useState(false);
+  const [dailyDateKey, setDailyDateKey] = useState<string | null>(null);
+  const [storageReady, setStorageReady] = useState(false);
 
   const question = questions[questionIndex];
   const currentAnswer = answers.find((answer) => answer.questionId === question.id);
@@ -28,6 +54,53 @@ export default function HomePage() {
   );
   const rareAnswerCount = answers.filter((answer) => answer.percentage <= 8).length;
   const bestAnswer = [...answers].sort((a, b) => a.percentage - b.percentage)[0];
+
+  useEffect(() => {
+    const dateKey = getJapanDateKey();
+    let restoredProgress: ReturnType<typeof restoreDailyProgress> = null;
+
+    try {
+      const rawValue = window.localStorage.getItem(DAILY_PROGRESS_STORAGE_KEY);
+      restoredProgress = restoreDailyProgress(rawValue, dateKey, questions);
+
+      if (!restoredProgress && rawValue) {
+        window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
+      }
+    } catch {
+      // localStorageが利用できない環境でも、ゲーム自体は継続する。
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      if (restoredProgress) {
+        setAnswers(restoredProgress.answers);
+        setQuestionIndex(restoredProgress.questionIndex);
+        setSelectedChoiceId(restoredProgress.selectedChoiceId);
+        setCompleted(restoredProgress.completed);
+      }
+
+      setDailyDateKey(dateKey);
+      setStorageReady(true);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady || !dailyDateKey) return;
+
+    try {
+      const progress = createDailyProgress({
+        dateKey: dailyDateKey,
+        questions,
+        answers,
+        questionIndex,
+        completed,
+      });
+      window.localStorage.setItem(DAILY_PROGRESS_STORAGE_KEY, serializeDailyProgress(progress));
+    } catch {
+      // 保存に失敗しても回答操作は止めない。
+    }
+  }, [answers, completed, dailyDateKey, questionIndex, storageReady]);
 
   function confirmAnswer() {
     if (!selectedChoice || currentAnswer) return;
@@ -49,6 +122,15 @@ export default function HomePage() {
   }
 
   function restart() {
+    const shouldRestart = window.confirm("今日の回答記録を消して、最初から遊び直しますか？");
+    if (!shouldRestart) return;
+
+    try {
+      window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
+    } catch {
+      // 削除できない場合も、現在の画面状態は初期化する。
+    }
+
     setQuestionIndex(0);
     setSelectedChoiceId(null);
     setAnswers([]);
@@ -74,6 +156,10 @@ export default function HomePage() {
       "_blank",
       "noopener,noreferrer",
     );
+  }
+
+  if (!storageReady) {
+    return <StorageLoadingState />;
   }
 
   if (completed) {
@@ -121,12 +207,12 @@ export default function HomePage() {
               結果を共有する
             </button>
             <button type="button" className="secondary-button" onClick={restart}>
-              もう一度遊ぶ
+              記録を消して遊び直す
             </button>
           </div>
 
           <p className="text-center text-xs leading-5 text-zinc-500">
-            MVPでは回答は保存されません。ページを更新すると最初から始まります。
+            回答はこのブラウザに、日本時間の当日分として保存されています。
           </p>
         </section>
       </main>
@@ -225,7 +311,7 @@ export default function HomePage() {
         </article>
 
         <p className="text-center text-xs leading-5 text-zinc-500">
-          回答するまで全体の分布は表示されません。直感で選んでください。
+          回答するまで全体の分布は表示されません。回答途中の記録はこのブラウザに保存されます。
         </p>
       </section>
     </main>
