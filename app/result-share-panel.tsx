@@ -77,17 +77,29 @@ export function ResultSharePanel({
       }
     }
 
-    const popup = window.open(buildXShareUrl(textWithUrl), "_blank", "noopener,noreferrer");
-    setShareStatus(popup ? "x-opened" : "failed");
+    const popup = window.open(buildXShareUrl(textWithUrl), "_blank");
+    if (!popup) {
+      setShareStatus("failed");
+      return;
+    }
+
+    popup.opener = null;
+    setShareStatus("x-opened");
   }
 
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7" aria-labelledby="share-title">
+    <section
+      className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
+      aria-labelledby="share-title"
+    >
       <div className="text-center">
         <p id="share-title" className="text-sm font-semibold text-zinc-200">
           ネタバレなしで結果を共有
         </p>
-        <p className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl" aria-label={`回答順のレア度: ${answers.map((answer) => answer.rarity).join("、")}`}>
+        <p
+          className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl"
+          aria-label={`回答順のレア度: ${answers.map((answer) => answer.rarity).join("、")}`}
+        >
           {rarityGrid}
         </p>
         <p className="mt-3 text-xs leading-5 text-zinc-500">
