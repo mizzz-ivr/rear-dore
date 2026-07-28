@@ -4,6 +4,7 @@ import {
   createDailyProgress,
   getJapanDateKey,
   getMillisecondsUntilNextJapanDay,
+  resolveExternalProgressUpdate,
   restoreDailyProgress,
   serializeDailyProgress,
 } from "./progress";
@@ -20,6 +21,10 @@ function serialize(value: unknown): string {
 
 function restore(rawValue: string | null) {
   return restoreDailyProgress(rawValue, dateKey, questionSet.id, questions);
+}
+
+function resolveExternal(rawValue: string | null) {
+  return resolveExternalProgressUpdate(rawValue, dateKey, questionSet.id, questions);
 }
 
 describe("getJapanDateKey", () => {
@@ -176,5 +181,54 @@ describe("restoreDailyProgress", () => {
     }),
   ])("不正または不整合な保存値を破棄する", (rawValue) => {
     expect(restore(rawValue)).toBeNull();
+  });
+});
+
+describe("resolveExternalProgressUpdate", () => {
+  it("有効な別タブ更新を再計算済みの進捗として返す", () => {
+    const stored = createDailyProgress({
+      dateKey,
+      questionSetId: questionSet.id,
+      questions,
+      answers: [firstAnswer],
+      questionIndex: 1,
+      completed: false,
+    });
+
+    expect(resolveExternal(serializeDailyProgress(stored))).toEqual({
+      type: "restore",
+      progress: {
+        answers: [firstAnswer],
+        questionIndex: 1,
+        selectedChoiceId: null,
+        completed: false,
+      },
+    });
+  });
+
+  it("記録削除を初期化指示として返す", () => {
+    expect(resolveExternal(null)).toEqual({ type: "reset" });
+  });
+
+  it.each([
+    "{broken-json",
+    serialize({
+      version: 2,
+      dateKey: "2026-07-27",
+      questionSetId: questionSet.id,
+      phase: "question",
+      activeQuestionId: questions[0].id,
+      answers: [],
+    }),
+    serialize({
+      version: 2,
+      dateKey,
+      questionSetId: "different-question-set",
+      phase: "question",
+      activeQuestionId: questions[0].id,
+      answers: [],
+    }),
+  ])("不正・過去日・別問題セットの更新を無視する", (rawValue) => {
+    expect(resolveExternal(rawValue)).toEqual({ type: "ignore" });
   });
 });

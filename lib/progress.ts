@@ -28,6 +28,11 @@ export type RestoredDailyProgress = {
   completed: boolean;
 };
 
+export type ExternalProgressUpdate =
+  | { type: "restore"; progress: RestoredDailyProgress }
+  | { type: "reset" }
+  | { type: "ignore" };
+
 type CreateDailyProgressParams = {
   dateKey: string;
   questionSetId: string;
@@ -173,4 +178,28 @@ export function restoreDailyProgress(
     selectedChoiceId: parsed.phase === "result" ? answers[questionIndex]?.choiceId ?? null : null,
     completed: parsed.phase === "completed",
   };
+}
+
+export function resolveExternalProgressUpdate(
+  rawValue: string | null,
+  expectedDateKey: string,
+  expectedQuestionSetId: string,
+  questions: Question[],
+): ExternalProgressUpdate {
+  if (rawValue === null) {
+    return { type: "reset" };
+  }
+
+  const progress = restoreDailyProgress(
+    rawValue,
+    expectedDateKey,
+    expectedQuestionSetId,
+    questions,
+  );
+
+  if (!progress) {
+    return { type: "ignore" };
+  }
+
+  return { type: "restore", progress };
 }
