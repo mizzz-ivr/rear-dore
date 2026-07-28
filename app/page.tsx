@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   calculateResult,
+  DEFAULT_QUESTION_SET,
+  getDailyQuestionSet,
   getPlayerTitle,
-  questions,
   type AnswerResult,
 } from "@/lib/game";
 import {
@@ -28,8 +29,8 @@ function StorageLoadingState() {
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">レアどれ？</h1>
         </header>
         <div className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 text-center sm:p-10" role="status">
-          <p className="font-semibold">今日の記録を確認しています</p>
-          <p className="mt-2 text-sm text-zinc-400">回答途中の場合は、続きから再開します。</p>
+          <p className="font-semibold">今日の問題と記録を確認しています</p>
+          <p className="mt-2 text-sm text-zinc-400">回答途中の場合は、同じ問題セットの続きから再開します。</p>
         </div>
       </section>
     </main>
@@ -37,6 +38,7 @@ function StorageLoadingState() {
 }
 
 export default function HomePage() {
+  const [questionSet, setQuestionSet] = useState(DEFAULT_QUESTION_SET);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedChoiceId, setSelectedChoiceId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<AnswerResult[]>([]);
@@ -44,6 +46,7 @@ export default function HomePage() {
   const [dailyDateKey, setDailyDateKey] = useState<string | null>(null);
   const [storageReady, setStorageReady] = useState(false);
 
+  const questions = questionSet.questions;
   const question = questions[questionIndex];
   const currentAnswer = answers.find((answer) => answer.questionId === question.id);
   const selectedChoice = question.choices.find((choice) => choice.id === selectedChoiceId);
@@ -57,11 +60,17 @@ export default function HomePage() {
 
   useEffect(() => {
     const dateKey = getJapanDateKey();
+    const dailyQuestionSet = getDailyQuestionSet(dateKey);
     let restoredProgress: ReturnType<typeof restoreDailyProgress> = null;
 
     try {
       const rawValue = window.localStorage.getItem(DAILY_PROGRESS_STORAGE_KEY);
-      restoredProgress = restoreDailyProgress(rawValue, dateKey, questions);
+      restoredProgress = restoreDailyProgress(
+        rawValue,
+        dateKey,
+        dailyQuestionSet.id,
+        dailyQuestionSet.questions,
+      );
 
       if (!restoredProgress && rawValue) {
         window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
@@ -71,6 +80,8 @@ export default function HomePage() {
     }
 
     const frameId = window.requestAnimationFrame(() => {
+      setQuestionSet(dailyQuestionSet);
+
       if (restoredProgress) {
         setAnswers(restoredProgress.answers);
         setQuestionIndex(restoredProgress.questionIndex);
@@ -91,6 +102,7 @@ export default function HomePage() {
     try {
       const progress = createDailyProgress({
         dateKey: dailyDateKey,
+        questionSetId: questionSet.id,
         questions,
         answers,
         questionIndex,
@@ -100,7 +112,7 @@ export default function HomePage() {
     } catch {
       // 保存に失敗しても回答操作は止めない。
     }
-  }, [answers, completed, dailyDateKey, questionIndex, storageReady]);
+  }, [answers, completed, dailyDateKey, questionIndex, questionSet.id, questions, storageReady]);
 
   function confirmAnswer() {
     if (!selectedChoice || currentAnswer) return;
@@ -139,7 +151,7 @@ export default function HomePage() {
 
   async function shareResult() {
     const title = getPlayerTitle(totalScore);
-    const text = `今日のレアどれ？は${totalScore.toLocaleString("ja-JP")}点。称号「${title}」でした。 #レアどれ`;
+    const text = `今日のレアどれ？「${questionSet.title}」は${totalScore.toLocaleString("ja-JP")}点。称号「${title}」でした。 #レアどれ`;
     const url = window.location.origin;
 
     if (navigator.share) {
@@ -171,6 +183,7 @@ export default function HomePage() {
           <header className="text-center">
             <p className="text-sm font-medium tracking-[0.24em] text-lime-300">TODAY&apos;S RESULT</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">レアどれ？</h1>
+            <p className="mt-2 text-sm text-zinc-400">本日の5問・{questionSet.title}</p>
           </header>
 
           <div className="result-shell overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6 sm:p-10">
@@ -228,6 +241,7 @@ export default function HomePage() {
           <div>
             <p className="text-xs font-medium tracking-[0.22em] text-lime-300">RARE DORE?</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">レアどれ？</h1>
+            <p className="mt-1 text-xs text-zinc-500">本日の5問・{questionSet.title}</p>
           </div>
           <p className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold tabular-nums">
             {questionIndex + 1} / {questions.length}
