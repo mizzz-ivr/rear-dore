@@ -3,6 +3,7 @@ import { calculateResult, type AnswerResult, type Question } from "./game";
 export const DAILY_PROGRESS_STORAGE_KEY = "rear-dore:daily-progress";
 
 const DAILY_PROGRESS_VERSION = 2;
+const JAPAN_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000;
 
 type ProgressPhase = "question" | "result" | "completed";
 
@@ -40,10 +41,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function getJapanDateKey(date: Date = new Date()): string {
+function assertValidDate(date: Date): void {
   if (!Number.isFinite(date.getTime())) {
     throw new RangeError("有効な日時を指定してください。");
   }
+}
+
+export function getJapanDateKey(date: Date = new Date()): string {
+  assertValidDate(date);
 
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Tokyo",
@@ -62,6 +67,15 @@ export function getJapanDateKey(date: Date = new Date()): string {
   }
 
   return `${year}-${month}-${day}`;
+}
+
+export function getMillisecondsUntilNextJapanDay(date: Date = new Date()): number {
+  assertValidDate(date);
+
+  const [year, month, day] = getJapanDateKey(date).split("-").map(Number);
+  const nextJapanDayStart = Date.UTC(year, month - 1, day + 1) - JAPAN_UTC_OFFSET_MILLISECONDS;
+
+  return nextJapanDayStart - date.getTime();
 }
 
 export function createDailyProgress({
