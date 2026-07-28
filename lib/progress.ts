@@ -2,7 +2,7 @@ import { calculateResult, type AnswerResult, type Question } from "./game";
 
 export const DAILY_PROGRESS_STORAGE_KEY = "rear-dore:daily-progress";
 
-const DAILY_PROGRESS_VERSION = 1;
+const DAILY_PROGRESS_VERSION = 2;
 
 type ProgressPhase = "question" | "result" | "completed";
 
@@ -14,6 +14,7 @@ type StoredAnswer = {
 type StoredDailyProgress = {
   version: typeof DAILY_PROGRESS_VERSION;
   dateKey: string;
+  questionSetId: string;
   phase: ProgressPhase;
   activeQuestionId: string;
   answers: StoredAnswer[];
@@ -28,6 +29,7 @@ export type RestoredDailyProgress = {
 
 type CreateDailyProgressParams = {
   dateKey: string;
+  questionSetId: string;
   questions: Question[];
   answers: AnswerResult[];
   questionIndex: number;
@@ -64,11 +66,16 @@ export function getJapanDateKey(date: Date = new Date()): string {
 
 export function createDailyProgress({
   dateKey,
+  questionSetId,
   questions,
   answers,
   questionIndex,
   completed,
 }: CreateDailyProgressParams): StoredDailyProgress {
+  if (!questionSetId) {
+    throw new RangeError("questionSetIdを指定してください。");
+  }
+
   const activeQuestion = questions[questionIndex];
 
   if (!activeQuestion) {
@@ -81,6 +88,7 @@ export function createDailyProgress({
   return {
     version: DAILY_PROGRESS_VERSION,
     dateKey,
+    questionSetId,
     phase,
     activeQuestionId: activeQuestion.id,
     answers: answers.map((answer) => ({
@@ -97,9 +105,10 @@ export function serializeDailyProgress(progress: StoredDailyProgress): string {
 export function restoreDailyProgress(
   rawValue: string | null,
   expectedDateKey: string,
+  expectedQuestionSetId: string,
   questions: Question[],
 ): RestoredDailyProgress | null {
-  if (!rawValue || questions.length === 0) return null;
+  if (!rawValue || !expectedQuestionSetId || questions.length === 0) return null;
 
   let parsed: unknown;
 
@@ -112,6 +121,7 @@ export function restoreDailyProgress(
   if (!isRecord(parsed)) return null;
   if (parsed.version !== DAILY_PROGRESS_VERSION) return null;
   if (parsed.dateKey !== expectedDateKey) return null;
+  if (parsed.questionSetId !== expectedQuestionSetId) return null;
   if (parsed.phase !== "question" && parsed.phase !== "result" && parsed.phase !== "completed") return null;
   if (typeof parsed.activeQuestionId !== "string") return null;
   if (!Array.isArray(parsed.answers)) return null;
