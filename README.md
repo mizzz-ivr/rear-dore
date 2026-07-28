@@ -30,6 +30,8 @@ npm run build
 NEXT_PUBLIC_SITE_URL=https://reardore.ivrm.jp
 ```
 
+`NEXT_PUBLIC_SITE_URL`はHTTPまたはHTTPSのオリジンURLだけを指定します。パス、クエリ、ハッシュ、認証情報を含む値や不正な値は採用せず、`https://reardore.ivrm.jp`へフォールバックします。
+
 ## Vercelへの公開
 
 1. Vercelで`mizzz-ivr/rear-dore`をImportする
@@ -38,6 +40,15 @@ NEXT_PUBLIC_SITE_URL=https://reardore.ivrm.jp
 4. Domainsへ`reardore.ivrm.jp`を追加する
 5. DNS管理側へVercelが表示するCNAMEを設定する
 6. HTTPS、canonical、OGPを確認する
+
+公開後は次のURLとレスポンスヘッダーも確認します。
+
+- `/robots.txt`: `Host`と`Sitemap`が`https://reardore.ivrm.jp`を参照する
+- `/sitemap.xml`: トップページが登録されている
+- `/manifest.webmanifest`: 日本語名、開始URL、テーマ色が返る
+- 全ページ: `X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy`が付与される
+
+Content-Security-PolicyはNext.jsのスクリプトnonce設計と合わせて別タスクで導入します。HSTSはVercel側のHTTPSレスポンスで確認します。
 
 ## MVPのデータ方針
 

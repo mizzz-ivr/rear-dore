@@ -1,16 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { resolveSiteUrl } from "@/lib/site";
 import "./globals.css";
-
-const defaultSiteUrl = "https://reardore.ivrm.jp";
-
-function resolveSiteUrl(): URL {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? defaultSiteUrl);
-  } catch {
-    return new URL(defaultSiteUrl);
-  }
-}
 
 const siteUrl = resolveSiteUrl();
 
@@ -41,6 +32,7 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
