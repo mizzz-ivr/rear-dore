@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ResultSharePanel } from "@/app/result-share-panel";
 import {
   calculateResult,
   DEFAULT_QUESTION_SET,
@@ -38,9 +39,14 @@ function StorageLoadingState() {
           <p className="text-xs font-medium tracking-[0.22em] text-lime-300">RARE DORE?</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">レアどれ？</h1>
         </header>
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 text-center sm:p-10" role="status">
+        <div
+          className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 text-center sm:p-10"
+          role="status"
+        >
           <p className="font-semibold">今日の問題と記録を確認しています</p>
-          <p className="mt-2 text-sm text-zinc-400">回答途中の場合は、同じ問題セットの続きから再開します。</p>
+          <p className="mt-2 text-sm text-zinc-400">
+            回答途中の場合は、同じ問題セットの続きから再開します。
+          </p>
         </div>
       </section>
     </main>
@@ -60,7 +66,9 @@ function DayChangeNotice({ onDismiss }: DayChangeNoticeProps) {
     >
       <div>
         <p className="font-semibold text-lime-200">日付が変わりました</p>
-        <p className="mt-1 text-sm leading-6 text-zinc-300">本日の新しい5問へ自動で切り替えました。</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-300">
+          本日の新しい5問へ自動で切り替えました。
+        </p>
       </div>
       <button
         type="button"
@@ -86,7 +94,9 @@ function CrossTabSyncNotice({ onDismiss }: CrossTabSyncNoticeProps) {
     >
       <div>
         <p className="font-semibold text-sky-200">別のタブと同期しました</p>
-        <p className="mt-1 text-sm leading-6 text-zinc-300">このブラウザで行われた最新の回答操作を反映しました。</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-300">
+          このブラウザで行われた最新の回答操作を反映しました。
+        </p>
       </div>
       <button
         type="button"
@@ -172,7 +182,10 @@ export default function HomePage() {
         questionIndex,
         completed,
       });
-      window.localStorage.setItem(DAILY_PROGRESS_STORAGE_KEY, serializeDailyProgress(progress));
+      window.localStorage.setItem(
+        DAILY_PROGRESS_STORAGE_KEY,
+        serializeDailyProgress(progress),
+      );
     } catch {
       // 保存に失敗しても回答操作は止めない。
     }
@@ -289,7 +302,9 @@ export default function HomePage() {
   }
 
   function restart() {
-    const shouldRestart = window.confirm("今日の回答記録を消して、最初から遊び直しますか？");
+    const shouldRestart = window.confirm(
+      "今日の回答記録を消して、最初から遊び直しますか？",
+    );
     if (!shouldRestart) return;
 
     clearStoredDailyProgress();
@@ -298,27 +313,6 @@ export default function HomePage() {
     setAnswers([]);
     setCompleted(false);
     setCrossTabNoticeVisible(false);
-  }
-
-  async function shareResult() {
-    const title = getPlayerTitle(totalScore);
-    const text = `今日のレアどれ？「${questionSet.title}」は${totalScore.toLocaleString("ja-JP")}点。称号「${title}」でした。 #レアどれ`;
-    const url = window.location.origin;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "レアどれ？", text, url });
-        return;
-      } catch {
-        return;
-      }
-    }
-
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${text}\n${url}`)}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
   }
 
   if (!storageReady) {
@@ -332,9 +326,15 @@ export default function HomePage() {
       <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-14">
         <section className="mx-auto flex w-full max-w-2xl flex-col gap-8">
           <header className="text-center">
-            <p className="text-sm font-medium tracking-[0.24em] text-lime-300">TODAY&apos;S RESULT</p>
-            <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">レアどれ？</h1>
-            <p className="mt-2 text-sm text-zinc-400">本日の5問・{questionSet.title}</p>
+            <p className="text-sm font-medium tracking-[0.24em] text-lime-300">
+              TODAY&apos;S RESULT
+            </p>
+            <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-6xl">
+              レアどれ？
+            </h1>
+            <p className="mt-2 text-sm text-zinc-400">
+              本日の5問・{questionSet.title}
+            </p>
           </header>
 
           {crossTabNoticeVisible && (
@@ -355,29 +355,37 @@ export default function HomePage() {
             <dl className="mt-6 grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-white/5 p-4">
                 <dt className="text-sm text-zinc-400">SR以上</dt>
-                <dd className="mt-1 text-2xl font-bold">{rareAnswerCount} / {questions.length}</dd>
+                <dd className="mt-1 text-2xl font-bold">
+                  {rareAnswerCount} / {questions.length}
+                </dd>
               </div>
               <div className="rounded-2xl bg-white/5 p-4">
                 <dt className="text-sm text-zinc-400">最レア回答</dt>
-                <dd className="mt-1 text-2xl font-bold">{bestAnswer ? formatPercentage(bestAnswer.percentage) : "-"}</dd>
+                <dd className="mt-1 text-2xl font-bold">
+                  {bestAnswer ? formatPercentage(bestAnswer.percentage) : "-"}
+                </dd>
               </div>
             </dl>
 
             {bestAnswer && (
               <p className="mt-5 text-center text-sm leading-6 text-zinc-400">
-                一番レアだった選択は「<span className="text-zinc-100">{bestAnswer.choiceLabel}</span>」でした。
+                一番レアだった選択は「
+                <span className="text-zinc-100">{bestAnswer.choiceLabel}</span>」でした。
               </p>
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button type="button" className="primary-button" onClick={shareResult}>
-              結果を共有する
-            </button>
-            <button type="button" className="secondary-button" onClick={restart}>
-              記録を消して遊び直す
-            </button>
-          </div>
+          <ResultSharePanel
+            dateKey={dailyDateKey ?? getJapanDateKey()}
+            questionSetTitle={questionSet.title}
+            totalScore={totalScore}
+            playerTitle={title}
+            answers={answers}
+          />
+
+          <button type="button" className="secondary-button w-full" onClick={restart}>
+            記録を消して遊び直す
+          </button>
 
           <p className="text-center text-xs leading-5 text-zinc-500">
             回答はこのブラウザに、日本時間の当日分として保存されます。問題は毎日0時に自動更新されます。
@@ -412,12 +420,19 @@ export default function HomePage() {
         )}
 
         <div aria-label="回答進捗" className="h-2 overflow-hidden rounded-full bg-white/8">
-          <div className="h-full rounded-full bg-lime-300 transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+          <div
+            className="h-full rounded-full bg-lime-300 transition-[width] duration-500 motion-reduce:transition-none"
+            style={{ width: `${progress}%` }}
+          />
         </div>
 
         <article className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-8">
-          <p className="text-sm font-medium text-zinc-400">みんなが選ばなそうな答えは、どれ？</p>
-          <h2 className="mt-3 text-2xl font-bold leading-snug sm:text-4xl">{question.prompt}</h2>
+          <p className="text-sm font-medium text-zinc-400">
+            みんなが選ばなそうな答えは、どれ？
+          </p>
+          <h2 className="mt-3 text-2xl font-bold leading-snug sm:text-4xl">
+            {question.prompt}
+          </h2>
 
           <fieldset className="mt-7 space-y-3" disabled={Boolean(currentAnswer)}>
             <legend className="sr-only">回答を1つ選択してください</legend>
@@ -447,7 +462,12 @@ export default function HomePage() {
           </fieldset>
 
           {!currentAnswer ? (
-            <button type="button" className="primary-button mt-6 w-full" disabled={!selectedChoiceId} onClick={confirmAnswer}>
+            <button
+              type="button"
+              className="primary-button mt-6 w-full"
+              disabled={!selectedChoiceId}
+              onClick={confirmAnswer}
+            >
               この答えで決定
             </button>
           ) : (
@@ -458,8 +478,12 @@ export default function HomePage() {
                   <p className="mt-1 text-3xl font-black">{currentAnswer.rarity}</p>
                 </div>
                 <div className="sm:text-right">
-                  <p className="text-4xl font-black tabular-nums text-lime-300">{formatPercentage(currentAnswer.percentage)}</p>
-                  <p className="mt-1 text-sm text-zinc-400">+{currentAnswer.score.toLocaleString("ja-JP")}点</p>
+                  <p className="text-4xl font-black tabular-nums text-lime-300">
+                    {formatPercentage(currentAnswer.percentage)}
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    +{currentAnswer.score.toLocaleString("ja-JP")}点
+                  </p>
                 </div>
               </div>
 
@@ -467,8 +491,18 @@ export default function HomePage() {
                 {question.choices.map((choice) => (
                   <div key={choice.id}>
                     <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                      <span className={choice.id === currentAnswer.choiceId ? "font-bold text-lime-200" : "text-zinc-300"}>{choice.label}</span>
-                      <span className="shrink-0 tabular-nums text-zinc-400">{formatPercentage(choice.percentage)}</span>
+                      <span
+                        className={
+                          choice.id === currentAnswer.choiceId
+                            ? "font-bold text-lime-200"
+                            : "text-zinc-300"
+                        }
+                      >
+                        {choice.label}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-zinc-400">
+                        {formatPercentage(choice.percentage)}
+                      </span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-white/8">
                       <div
