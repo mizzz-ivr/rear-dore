@@ -57,25 +57,32 @@ export default function HomePage() {
 
   useEffect(() => {
     const dateKey = getJapanDateKey();
+    let restoredProgress: ReturnType<typeof restoreDailyProgress> = null;
 
     try {
       const rawValue = window.localStorage.getItem(DAILY_PROGRESS_STORAGE_KEY);
-      const restored = restoreDailyProgress(rawValue, dateKey, questions);
+      restoredProgress = restoreDailyProgress(rawValue, dateKey, questions);
 
-      if (restored) {
-        setAnswers(restored.answers);
-        setQuestionIndex(restored.questionIndex);
-        setSelectedChoiceId(restored.selectedChoiceId);
-        setCompleted(restored.completed);
-      } else if (rawValue) {
+      if (!restoredProgress && rawValue) {
         window.localStorage.removeItem(DAILY_PROGRESS_STORAGE_KEY);
       }
     } catch {
       // localStorageが利用できない環境でも、ゲーム自体は継続する。
     }
 
-    setDailyDateKey(dateKey);
-    setStorageReady(true);
+    const frameId = window.requestAnimationFrame(() => {
+      if (restoredProgress) {
+        setAnswers(restoredProgress.answers);
+        setQuestionIndex(restoredProgress.questionIndex);
+        setSelectedChoiceId(restoredProgress.selectedChoiceId);
+        setCompleted(restoredProgress.completed);
+      }
+
+      setDailyDateKey(dateKey);
+      setStorageReady(true);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
