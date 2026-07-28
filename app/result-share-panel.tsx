@@ -1,7 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { AnswerResult } from "@/lib/game";
+import { useEffect, useMemo, useState } from "react";
+import { PlayHistoryPanel } from "@/app/play-history-panel";
+import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
+import {
+  calculateCurrentStreak,
+  createPlayHistoryEntry,
+  PLAY_HISTORY_STORAGE_KEY,
+  restorePlayHistory,
+  serializePlayHistory,
+  upsertPlayHistory,
+  type PlayHistoryEntry,
+} from "@/lib/history";
 import {
   appendShareUrl,
   buildRarityGrid,
@@ -38,6 +48,19 @@ export function ResultSharePanel({
   answers,
 }: ResultSharePanelProps) {
   const [shareStatus, setShareStatus] = useState<ShareStatus>(null);
+  const currentHistoryEntry = useMemo(() => {
+    const questionSet = getDailyQuestionSet(dateKey);
+
+    return createPlayHistoryEntry({
+      dateKey,
+      questionSetId: questionSet.id,
+      questionSetTitle,
+      totalScore,
+      playerTitle,
+      rarities: answers.map((answer) => answer.rarity),
+    });
+  }, [answers, dateKey, playerTitle, questionSetTitle, totalScore]);
+  const [playHistory, setPlayHistory] = useState<PlayHistoryEntry[]>(() => [currentHistoryEntry]);
   const rarityGrid = useMemo(() => buildRarityGrid(answers), [answers]);
   const shareText = useMemo(
     () =>
@@ -50,6 +73,30 @@ export function ResultSharePanel({
       }),
     [answers, dateKey, playerTitle, questionSetTitle, totalScore],
   );
+  const currentStreak = useMemo(
+    () => calculateCurrentStreak(playHistory, dateKey),
+    [dateKey, playHistory],
+  );
+
+  useEffect(() => {
+    let nextHistory = [currentHistoryEntry];
+
+    try {
+      const restoredHistory = restorePlayHistory(
+        window.localStorage.getItem(PLAY_HISTORY_STORAGE_KEY),
+      );
+      nextHistory = upsertPlayHistory(restoredHistory, currentHistoryEntry);
+      window.localStorage.setItem(
+        PLAY_HISTORY_STORAGE_KEY,
+        serializePlayHistory(nextHistory),
+      );
+    } catch {
+      // 履歴保存に失敗しても、総合結果と共有機能は継続する。
+    }
+
+    const frameId = window.requestAnimationFrame(() => setPlayHistory(nextHistory));
+    return () => window.cancelAnimationFrame(frameId);
+  }, [currentHistoryEntry]);
 
   async function shareResult(): Promise<void> {
     setShareStatus(null);
@@ -88,38 +135,42 @@ export function ResultSharePanel({
   }
 
   return (
-    <section
-      className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
-      aria-labelledby="share-title"
-    >
-      <div className="text-center">
-        <p id="share-title" className="text-sm font-semibold text-zinc-200">
-          ネタバレなしで結果を共有
-        </p>
-        <p
-          className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl"
-          aria-label={`回答順のレア度: ${answers.map((answer) => answer.rarity).join("、")}`}
-        >
-          {rarityGrid}
-        </p>
-        <p className="mt-3 text-xs leading-5 text-zinc-500">
-          問題文・選択肢・回答内容は共有文面に含まれません。
-        </p>
-      </div>
+    <>
+      <PlayHistoryPanel entries={playHistory} currentStreak={currentStreak} />
 
-      <button type="button" className="primary-button mt-6 w-full" onClick={shareResult}>
-        結果を共有する
-      </button>
-
-      {shareStatus && (
-        <div
-          className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${shareStatus === "failed" ? "border-red-300/25 bg-red-300/8 text-red-100" : "border-lime-300/25 bg-lime-300/8 text-lime-100"}`}
-          role={shareStatus === "failed" ? "alert" : "status"}
-          aria-live="polite"
-        >
-          {statusMessage[shareStatus]}
+      <section
+        className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
+        aria-labelledby="share-title"
+      >
+        <div className="text-center">
+          <p id="share-title" className="text-sm font-semibold text-zinc-200">
+            ネタバレなしで結果を共有
+          </p>
+          <p
+            className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl"
+            aria-label={`回答順のレア度: ${answers.map((answer) => answer.rarity).join("、")}`}
+          >
+            {rarityGrid}
+          </p>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
+            問題文・選択肢・回答内容は共有文面に含まれません。
+          </p>
         </div>
-      )}
-    </section>
+
+        <button type="button" className="primary-button mt-6 w-full" onClick={shareResult}>
+          結果を共有する
+        </button>
+
+        {shareStatus && (
+          <div
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm leading-6 ${shareStatus === "failed" ? "border-red-300/25 bg-red-300/8 text-red-100" : "border-lime-300/25 bg-lime-300/8 text-lime-100"}`}
+            role={shareStatus === "failed" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {statusMessage[shareStatus]}
+          </div>
+        )}
+      </section>
+    </>
   );
 }
