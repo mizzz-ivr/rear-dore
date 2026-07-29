@@ -1,6 +1,11 @@
 export default function LoadingPage() {
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-10" aria-busy="true">
+    <main
+      id="main-content"
+      className="min-h-screen px-4 py-6 sm:px-6 sm:py-10"
+      aria-busy="true"
+      tabIndex={-1}
+    >
       <section className="mx-auto flex w-full max-w-2xl flex-col gap-6" role="status" aria-live="polite">
         <span className="sr-only">問題を読み込んでいます</span>
 
