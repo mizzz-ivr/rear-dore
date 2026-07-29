@@ -7,7 +7,11 @@ type ErrorPageProps = Readonly<{
 
 export default function ErrorPage({ reset }: ErrorPageProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main
+      id="main-content"
+      className="flex min-h-screen items-center justify-center px-4 py-10"
+      tabIndex={-1}
+    >
       <section className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6 text-center sm:p-10">
         <p className="text-sm font-medium tracking-[0.22em] text-lime-300">UNEXPECTED ERROR</p>
         <h1 className="mt-4 text-3xl font-black sm:text-4xl">問題を読み込めませんでした</h1>

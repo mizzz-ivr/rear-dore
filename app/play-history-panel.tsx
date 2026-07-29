@@ -48,6 +48,7 @@ export function PlayHistoryPanel({ entries, currentStreak }: PlayHistoryPanelPro
             const rarityGrid = buildRarityGrid(
               entry.rarities.map((rarity) => ({ rarity })),
             );
+            const rarityText = entry.rarities.join("、");
 
             return (
               <li key={entry.dateKey} className="flex items-center justify-between gap-4 py-4">
@@ -59,11 +60,9 @@ export function PlayHistoryPanel({ entries, currentStreak }: PlayHistoryPanelPro
                   <p className="mt-1 truncate text-xs text-zinc-500">{entry.playerTitle}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p
-                    className="text-lg tracking-[0.12em]"
-                    aria-label={`レア度: ${entry.rarities.join("、")}`}
-                  >
-                    {rarityGrid}
+                  <p className="text-lg tracking-[0.12em]">
+                    <span aria-hidden="true">{rarityGrid}</span>
+                    <span className="sr-only">レア度: {rarityText}</span>
                   </p>
                   <p className="mt-1 text-sm font-semibold tabular-nums text-zinc-300">
                     {entry.totalScore.toLocaleString("ja-JP")}点

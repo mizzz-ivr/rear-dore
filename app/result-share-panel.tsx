@@ -62,6 +62,7 @@ export function ResultSharePanel({
   }, [answers, dateKey, playerTitle, questionSetTitle, totalScore]);
   const [playHistory, setPlayHistory] = useState<PlayHistoryEntry[]>(() => [currentHistoryEntry]);
   const rarityGrid = useMemo(() => buildRarityGrid(answers), [answers]);
+  const rarityText = answers.map((answer) => answer.rarity).join("、");
   const shareText = useMemo(
     () =>
       buildShareText({
@@ -146,11 +147,9 @@ export function ResultSharePanel({
           <p id="share-title" className="text-sm font-semibold text-zinc-200">
             ネタバレなしで結果を共有
           </p>
-          <p
-            className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl"
-            aria-label={`回答順のレア度: ${answers.map((answer) => answer.rarity).join("、")}`}
-          >
-            {rarityGrid}
+          <p className="mt-2 text-4xl tracking-[0.18em] sm:text-5xl">
+            <span aria-hidden="true">{rarityGrid}</span>
+            <span className="sr-only">回答順のレア度: {rarityText}</span>
           </p>
           <p className="mt-3 text-xs leading-5 text-zinc-500">
             問題文・選択肢・回答内容は共有文面に含まれません。

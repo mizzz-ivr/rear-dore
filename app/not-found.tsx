@@ -2,7 +2,11 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+    <main
+      id="main-content"
+      className="flex min-h-screen items-center justify-center px-4 py-10"
+      tabIndex={-1}
+    >
       <section className="w-full max-w-lg text-center">
         <p className="text-sm font-medium tracking-[0.22em] text-lime-300">404</p>
         <h1 className="mt-4 text-4xl font-black">その選択肢は見つかりません</h1>

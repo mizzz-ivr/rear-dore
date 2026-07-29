@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ResultSharePanel } from "@/app/result-share-panel";
 import {
   calculateResult,
@@ -33,7 +33,12 @@ function clearStoredDailyProgress(): void {
 
 function StorageLoadingState() {
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-10" aria-busy="true">
+    <main
+      id="main-content"
+      className="min-h-screen px-4 py-6 sm:px-6 sm:py-10"
+      aria-busy="true"
+      tabIndex={-1}
+    >
       <section className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <header>
           <p className="text-xs font-medium tracking-[0.22em] text-lime-300">RARE DORE?</p>
@@ -109,6 +114,8 @@ function CrossTabSyncNotice({ onDismiss }: CrossTabSyncNoticeProps) {
   );
 }
 
+type PendingFocusTarget = "question" | "result" | null;
+
 export default function HomePage() {
   const [questionSet, setQuestionSet] = useState(DEFAULT_QUESTION_SET);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -119,6 +126,9 @@ export default function HomePage() {
   const [storageReady, setStorageReady] = useState(false);
   const [dayChangeNoticeVisible, setDayChangeNoticeVisible] = useState(false);
   const [crossTabNoticeVisible, setCrossTabNoticeVisible] = useState(false);
+  const questionHeadingRef = useRef<HTMLHeadingElement>(null);
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const pendingFocusRef = useRef<PendingFocusTarget>(null);
 
   const questions = questionSet.questions;
   const question = questions[questionIndex];
@@ -282,6 +292,18 @@ export default function HomePage() {
     };
   }, [dailyDateKey, storageReady]);
 
+  useEffect(() => {
+    const pendingFocus = pendingFocusRef.current;
+    if (!storageReady || !pendingFocus) return;
+
+    pendingFocusRef.current = null;
+    const target = pendingFocus === "result" ? resultHeadingRef.current : questionHeadingRef.current;
+    if (!target) return;
+
+    const frameId = window.requestAnimationFrame(() => target.focus());
+    return () => window.cancelAnimationFrame(frameId);
+  }, [completed, questionIndex, storageReady]);
+
   function confirmAnswer() {
     if (!selectedChoice || currentAnswer) return;
 
@@ -293,10 +315,12 @@ export default function HomePage() {
     if (!currentAnswer) return;
 
     if (questionIndex === questions.length - 1) {
+      pendingFocusRef.current = "result";
       setCompleted(true);
       return;
     }
 
+    pendingFocusRef.current = "question";
     setQuestionIndex((current) => current + 1);
     setSelectedChoiceId(null);
   }
@@ -307,6 +331,7 @@ export default function HomePage() {
     );
     if (!shouldRestart) return;
 
+    pendingFocusRef.current = "question";
     clearStoredDailyProgress();
     setQuestionIndex(0);
     setSelectedChoiceId(null);
@@ -323,7 +348,7 @@ export default function HomePage() {
     const title = getPlayerTitle(totalScore);
 
     return (
-      <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-14">
+      <main id="main-content" className="min-h-screen px-4 py-8 sm:px-6 sm:py-14" tabIndex={-1}>
         <section className="mx-auto flex w-full max-w-2xl flex-col gap-8">
           <header className="text-center">
             <p className="text-sm font-medium tracking-[0.24em] text-lime-300">
@@ -342,7 +367,13 @@ export default function HomePage() {
           )}
 
           <div className="result-shell overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6 sm:p-10">
-            <p className="text-center text-sm text-zinc-400">今日のレア回答力</p>
+            <h2
+              ref={resultHeadingRef}
+              tabIndex={-1}
+              className="focus-target text-center text-sm text-zinc-400"
+            >
+              今日のレア回答力
+            </h2>
             <p className="mt-2 text-center text-6xl font-black tabular-nums text-lime-300 sm:text-7xl">
               {totalScore.toLocaleString("ja-JP")}
               <span className="ml-2 text-lg text-zinc-400">点</span>
@@ -395,10 +426,11 @@ export default function HomePage() {
     );
   }
 
-  const progress = ((questionIndex + (currentAnswer ? 1 : 0)) / questions.length) * 100;
+  const completedQuestionCount = questionIndex + (currentAnswer ? 1 : 0);
+  const progress = (completedQuestionCount / questions.length) * 100;
 
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-10">
+    <main id="main-content" className="min-h-screen px-4 py-6 sm:px-6 sm:py-10" tabIndex={-1}>
       <section className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <header className="flex items-center justify-between gap-4">
           <div>
@@ -419,7 +451,15 @@ export default function HomePage() {
           <CrossTabSyncNotice onDismiss={() => setCrossTabNoticeVisible(false)} />
         )}
 
-        <div aria-label="回答進捗" className="h-2 overflow-hidden rounded-full bg-white/8">
+        <div
+          role="progressbar"
+          aria-label="回答進捗"
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+          aria-valuenow={completedQuestionCount}
+          aria-valuetext={`${questions.length}問中${completedQuestionCount}問完了`}
+          className="h-2 overflow-hidden rounded-full bg-white/8"
+        >
           <div
             className="h-full rounded-full bg-lime-300 transition-[width] duration-500 motion-reduce:transition-none"
             style={{ width: `${progress}%` }}
@@ -430,11 +470,20 @@ export default function HomePage() {
           <p className="text-sm font-medium text-zinc-400">
             みんなが選ばなそうな答えは、どれ？
           </p>
-          <h2 className="mt-3 text-2xl font-bold leading-snug sm:text-4xl">
+          <h2
+            id="question-heading"
+            ref={questionHeadingRef}
+            tabIndex={-1}
+            className="focus-target mt-3 text-2xl font-bold leading-snug sm:text-4xl"
+          >
             {question.prompt}
           </h2>
 
-          <fieldset className="mt-7 space-y-3" disabled={Boolean(currentAnswer)}>
+          <fieldset
+            className="mt-7 space-y-3"
+            disabled={Boolean(currentAnswer)}
+            aria-labelledby="question-heading"
+          >
             <legend className="sr-only">回答を1つ選択してください</legend>
             {question.choices.map((choice, index) => {
               const selected = selectedChoiceId === choice.id;
@@ -471,7 +520,13 @@ export default function HomePage() {
               この答えで決定
             </button>
           ) : (
-            <section className="mt-7 border-t border-white/10 pt-7" aria-live="polite">
+            <section className="mt-7 border-t border-white/10 pt-7">
+              <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                回答結果。{currentAnswer.rarity}。選択率
+                {formatPercentage(currentAnswer.percentage)}。{currentAnswer.score.toLocaleString("ja-JP")}
+                点獲得。
+              </p>
+
               <div className="flex flex-col gap-3 rounded-2xl border border-lime-300/25 bg-lime-300/8 p-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-sm text-lime-200">あなたの回答は</p>
