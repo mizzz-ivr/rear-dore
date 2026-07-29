@@ -44,7 +44,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <a href="#main-content" className="skip-link">
+          本文へ移動
+        </a>
+        {children}
+      </body>
     </html>
   );
 }
