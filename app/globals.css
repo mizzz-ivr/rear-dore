@@ -30,10 +30,42 @@ input {
   font: inherit;
 }
 
+a:focus-visible,
 button:focus-visible,
 label:has(input:focus-visible) {
   outline: 3px solid rgba(190, 242, 100, 0.75);
   outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  max-width: calc(100vw - 1.5rem);
+  transform: translateY(calc(-100% - 1.5rem));
+  border: 1px solid #bef264;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #18181b;
+  background: #bef264;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.focus-target {
+  scroll-margin-top: 1rem;
+}
+
+.focus-target:focus {
+  border-radius: 0.25rem;
+  outline: 3px solid rgba(190, 242, 100, 0.75);
+  outline-offset: 4px;
 }
 
 .primary-button,
