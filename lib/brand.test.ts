@@ -14,7 +14,7 @@ describe("parsePwaIconSize", () => {
     expect(parsePwaIconSize(value)).toBe(expected);
   });
 
-  it.each(["", "0", "191", "256", "513", "abc", "192px", "192.0"]) (
+  it.each(["", "0", "191", "256", "513", "abc", "192px", "192.0"])(
     "未対応の値%sを拒否する",
     (value) => {
       expect(parsePwaIconSize(value)).toBeNull();
@@ -32,19 +32,31 @@ describe("buildPwaIconPath", () => {
 });
 
 describe("manifest", () => {
-  it("PWA用192pxと512pxアイコンを登録する", () => {
+  it("PWA用192pxと512pxアイコンをanyとmaskable用途で登録する", () => {
     expect(manifest().icons).toEqual([
       {
         src: "/pwa-icon/192",
         sizes: "192x192",
         type: "image/png",
-        purpose: "any maskable",
+        purpose: "any",
+      },
+      {
+        src: "/pwa-icon/192",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
       },
       {
         src: "/pwa-icon/512",
         sizes: "512x512",
         type: "image/png",
-        purpose: "any maskable",
+        purpose: "any",
+      },
+      {
+        src: "/pwa-icon/512",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ]);
   });
