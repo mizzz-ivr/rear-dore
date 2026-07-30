@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { buildPwaIconPath, PWA_ICON_SIZES } from "@/lib/brand";
+import { buildPwaIconPath, PWA_ICON_SIZES } from "../lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
