@@ -19,9 +19,9 @@ export const SOCIAL_IMAGE_SIZE = {
 } as const;
 
 export function parsePwaIconSize(value: string): PwaIconSize | null {
-  const size = Number(value);
+  if (value !== "192" && value !== "512") return null;
 
-  return PWA_ICON_SIZES.includes(size as PwaIconSize) ? (size as PwaIconSize) : null;
+  return Number(value) as PwaIconSize;
 }
 
 export function buildPwaIconPath(size: PwaIconSize): string {
