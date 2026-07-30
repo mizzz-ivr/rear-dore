@@ -11,11 +11,19 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#09090b",
     theme_color: "#09090b",
     lang: "ja",
-    icons: PWA_ICON_SIZES.map((size) => ({
-      src: buildPwaIconPath(size),
-      sizes: `${size}x${size}`,
-      type: "image/png",
-      purpose: "any maskable",
-    })),
+    icons: PWA_ICON_SIZES.flatMap((size) => [
+      {
+        src: buildPwaIconPath(size),
+        sizes: `${size}x${size}`,
+        type: "image/png",
+        purpose: "any" as const,
+      },
+      {
+        src: buildPwaIconPath(size),
+        sizes: `${size}x${size}`,
+        type: "image/png",
+        purpose: "maskable" as const,
+      },
+    ]),
   };
 }
