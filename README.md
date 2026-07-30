@@ -58,8 +58,13 @@ NEXT_PUBLIC_SITE_URL=https://reardore.ivrm.jp
 
 - `/robots.txt`: `Host`と`Sitemap`が`https://reardore.ivrm.jp`を参照する
 - `/sitemap.xml`: トップページが登録されている
-- `/manifest.webmanifest`: 日本語名、開始URL、テーマ色が返る
+- `/manifest.webmanifest`: 日本語名、開始URL、テーマ色、192px・512pxアイコンが返る
+- `/pwa-icon/192`、`/pwa-icon/512`: `image/png`として表示できる
+- ページの`head`: ブラウザアイコン、Apple Touch Icon、Open Graph画像、Twitter画像が登録される
+- SNSデバッガー: 1200×630のブランド画像と本番canonical URLが表示される
 - 全ページ: `X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy`が付与される
+
+アイコンとSNS画像は`ImageResponse`でコード生成し、外部画像や外部フォントには依存しません。manifestとホーム画面用画像は整備していますが、Service Worker、オフライン対応、プッシュ通知はMVP対象外です。
 
 Content-Security-PolicyはNext.jsのスクリプトnonce設計と合わせて別タスクで導入します。HSTSはVercel側のHTTPSレスポンスで確認します。
 
