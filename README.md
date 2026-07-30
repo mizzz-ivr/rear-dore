@@ -22,6 +22,12 @@ npm run test
 npm run build
 ```
 
+## 問題データの編集
+
+固定問題データは`lib/game.ts`の`questionSets`で管理します。ID命名、問題数、選択肢数、選択率合計、ローテーションへの影響は[問題セット追加・編集ガイド](docs/question-authoring.md)を確認してください。
+
+`npm run test`では、現在の全問題セットを専用検証器で確認します。不正がある場合は`questionSets[1].questions[3].choices`のような対象パスとエラー内容を表示します。
+
 ## アクセシビリティ確認
 
 公開前にキーボードだけで次を確認します。
