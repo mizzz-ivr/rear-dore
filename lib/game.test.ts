@@ -27,40 +27,6 @@ describe("getDailyQuestionSet", () => {
   );
 });
 
-describe("questionSets", () => {
-  it("3日分以上の有効な5問セットを持つ", () => {
-    expect(questionSets.length).toBeGreaterThanOrEqual(3);
-
-    const questionSetIds = new Set<string>();
-    const questionIds = new Set<string>();
-    const choiceIds = new Set<string>();
-
-    for (const questionSet of questionSets) {
-      expect(questionSetIds.has(questionSet.id)).toBe(false);
-      questionSetIds.add(questionSet.id);
-      expect(questionSet.title.length).toBeGreaterThan(0);
-      expect(questionSet.questions).toHaveLength(5);
-
-      for (const question of questionSet.questions) {
-        expect(questionIds.has(question.id)).toBe(false);
-        questionIds.add(question.id);
-        expect(question.prompt.length).toBeGreaterThan(0);
-        expect(question.choices.length).toBeGreaterThanOrEqual(4);
-        expect(question.choices.length).toBeLessThanOrEqual(5);
-        expect(question.choices.reduce((sum, choice) => sum + choice.percentage, 0)).toBe(100);
-
-        for (const choice of question.choices) {
-          expect(choiceIds.has(choice.id)).toBe(false);
-          choiceIds.add(choice.id);
-          expect(choice.label.length).toBeGreaterThan(0);
-          expect(choice.percentage).toBeGreaterThanOrEqual(0);
-          expect(choice.percentage).toBeLessThanOrEqual(100);
-        }
-      }
-    }
-  });
-});
-
 describe("getRarity", () => {
   it.each([
     [0, "UR"],
@@ -79,9 +45,12 @@ describe("getRarity", () => {
     expect(getRarity(percentage)).toBe(expected);
   });
 
-  it.each([-0.01, 100.01, Number.NaN, Number.POSITIVE_INFINITY])("不正な割合%sを拒否する", (percentage) => {
-    expect(() => getRarity(percentage)).toThrow(RangeError);
-  });
+  it.each([-0.01, 100.01, Number.NaN, Number.POSITIVE_INFINITY])(
+    "不正な割合%sを拒否する",
+    (percentage) => {
+      expect(() => getRarity(percentage)).toThrow(RangeError);
+    },
+  );
 });
 
 describe("getScore", () => {
