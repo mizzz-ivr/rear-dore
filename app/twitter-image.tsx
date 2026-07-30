@@ -6,6 +6,6 @@ export const alt = BRAND_IMAGE_ALT;
 export const size = SOCIAL_IMAGE_SIZE;
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default function TwitterImage() {
   return new ImageResponse(<BrandSocialImage />, size);
 }

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { buildPwaIconPath, PWA_ICON_SIZES } from "../lib/brand";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -10,5 +11,19 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#09090b",
     theme_color: "#09090b",
     lang: "ja",
+    icons: PWA_ICON_SIZES.flatMap((size) => [
+      {
+        src: buildPwaIconPath(size),
+        sizes: `${size}x${size}`,
+        type: "image/png",
+        purpose: "any" as const,
+      },
+      {
+        src: buildPwaIconPath(size),
+        sizes: `${size}x${size}`,
+        type: "image/png",
+        purpose: "maskable" as const,
+      },
+    ]),
   };
 }
