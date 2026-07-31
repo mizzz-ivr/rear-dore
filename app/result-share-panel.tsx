@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PlayHistoryPanel } from "@/app/play-history-panel";
 import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
 import {
-  calculateCurrentStreak,
+  calculatePlayHistoryStats,
   createPlayHistoryEntry,
   PLAY_HISTORY_STORAGE_KEY,
   restorePlayHistory,
@@ -74,8 +74,8 @@ export function ResultSharePanel({
       }),
     [answers, dateKey, playerTitle, questionSetTitle, totalScore],
   );
-  const currentStreak = useMemo(
-    () => calculateCurrentStreak(playHistory, dateKey),
+  const playHistoryStats = useMemo(
+    () => calculatePlayHistoryStats(playHistory, dateKey),
     [dateKey, playHistory],
   );
 
@@ -137,7 +137,7 @@ export function ResultSharePanel({
 
   return (
     <>
-      <PlayHistoryPanel entries={playHistory} currentStreak={currentStreak} />
+      <PlayHistoryPanel entries={playHistory} stats={playHistoryStats} />
 
       <section
         className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
