@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { DailyResetCountdown } from "@/app/daily-reset-countdown";
 import { resolveSiteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <a href="#main-content" className="skip-link">
           本文へ移動
         </a>
+        <DailyResetCountdown />
         {children}
       </body>
     </html>
