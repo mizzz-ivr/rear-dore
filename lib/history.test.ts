@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Rarity } from "./game";
 import {
   calculateCurrentStreak,
+  calculatePlayHistoryStats,
   createPlayHistoryEntry,
   restorePlayHistory,
   serializePlayHistory,
@@ -86,6 +87,91 @@ describe("upsertPlayHistory", () => {
     expect(restored).toHaveLength(30);
     expect(restored[0].dateKey).toBe("2026-07-31");
     expect(restored.at(-1)?.dateKey).toBe("2026-07-02");
+  });
+});
+
+describe("calculatePlayHistoryStats", () => {
+  it("空の履歴ではすべて0を返す", () => {
+    expect(calculatePlayHistoryStats([], "2026-07-28")).toEqual({
+      playCount: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      bestScore: 0,
+      averageScore: 0,
+    });
+  });
+
+  it("1件の履歴をそのまま統計へ反映する", () => {
+    expect(calculatePlayHistoryStats([createEntry("2026-07-28", 1_990)], "2026-07-28")).toEqual({
+      playCount: 1,
+      currentStreak: 1,
+      longestStreak: 1,
+      bestScore: 1_990,
+      averageScore: 1_990,
+    });
+  });
+
+  it("自己ベストと四捨五入した平均点を計算する", () => {
+    const stats = calculatePlayHistoryStats(
+      [
+        createEntry("2026-07-28", 900),
+        createEntry("2026-07-27", 1_000),
+        createEntry("2026-07-26", 1_001),
+      ],
+      "2026-07-28",
+    );
+
+    expect(stats.bestScore).toBe(1_001);
+    expect(stats.averageScore).toBe(967);
+  });
+
+  it("同日重複は後の履歴で上書きして二重集計しない", () => {
+    const stats = calculatePlayHistoryStats(
+      [
+        createEntry("2026-07-28", 900),
+        createEntry("2026-07-27", 1_000),
+        createEntry("2026-07-28", 3_000),
+      ],
+      "2026-07-28",
+    );
+
+    expect(stats.playCount).toBe(2);
+    expect(stats.bestScore).toBe(3_000);
+    expect(stats.averageScore).toBe(2_000);
+  });
+
+  it("日付順が不定でも年末年始をまたぐ最長連続日数を数える", () => {
+    const stats = calculatePlayHistoryStats(
+      [
+        createEntry("2026-12-31"),
+        createEntry("2026-12-28"),
+        createEntry("2027-01-01"),
+        createEntry("2026-12-30"),
+      ],
+      "2027-01-02",
+    );
+
+    expect(stats.currentStreak).toBe(3);
+    expect(stats.longestStreak).toBe(3);
+  });
+
+  it("過去の連続記録が現在の連続日数より長い場合も保持する", () => {
+    const stats = calculatePlayHistoryStats(
+      [
+        createEntry("2026-07-28"),
+        createEntry("2026-07-25"),
+        createEntry("2026-07-24"),
+        createEntry("2026-07-23"),
+      ],
+      "2026-07-28",
+    );
+
+    expect(stats.currentStreak).toBe(1);
+    expect(stats.longestStreak).toBe(3);
+  });
+
+  it("不正な基準日を拒否する", () => {
+    expect(() => calculatePlayHistoryStats([], "2026-02-30")).toThrow(RangeError);
   });
 });
 

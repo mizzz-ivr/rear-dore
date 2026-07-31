@@ -18,6 +18,14 @@ export type PlayHistoryEntry = {
   rarities: Rarity[];
 };
 
+export type PlayHistoryStats = Readonly<{
+  playCount: number;
+  currentStreak: number;
+  longestStreak: number;
+  bestScore: number;
+  averageScore: number;
+}>;
+
 type StoredPlayHistory = {
   version: typeof PLAY_HISTORY_VERSION;
   entries: unknown[];
@@ -109,6 +117,51 @@ function normalizeEntries(entries: readonly PlayHistoryEntry[]): PlayHistoryEntr
     .slice(0, MAX_HISTORY_ENTRIES);
 }
 
+function getPlayedTimestamps(entries: readonly PlayHistoryEntry[]): number[] {
+  return entries
+    .map((entry) => parseDateKey(entry.dateKey))
+    .filter((timestamp): timestamp is number => timestamp !== null)
+    .sort((left, right) => left - right);
+}
+
+function calculateCurrentStreakFromTimestamps(
+  playedTimestamps: readonly number[],
+  currentTimestamp: number,
+): number {
+  const playedTimestampSet = new Set(playedTimestamps);
+  const todayPlayed = playedTimestampSet.has(currentTimestamp);
+  const startTimestamp = todayPlayed ? currentTimestamp : currentTimestamp - DAY_IN_MILLISECONDS;
+
+  if (!playedTimestampSet.has(startTimestamp)) return 0;
+
+  let streak = 0;
+  let cursor = startTimestamp;
+
+  while (playedTimestampSet.has(cursor)) {
+    streak += 1;
+    cursor -= DAY_IN_MILLISECONDS;
+  }
+
+  return streak;
+}
+
+function calculateLongestStreak(playedTimestamps: readonly number[]): number {
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let previousTimestamp: number | null = null;
+
+  for (const timestamp of playedTimestamps) {
+    currentStreak =
+      previousTimestamp !== null && timestamp === previousTimestamp + DAY_IN_MILLISECONDS
+        ? currentStreak + 1
+        : 1;
+    longestStreak = Math.max(longestStreak, currentStreak);
+    previousTimestamp = timestamp;
+  }
+
+  return longestStreak;
+}
+
 export function createPlayHistoryEntry({
   dateKey,
   questionSetId,
@@ -171,34 +224,31 @@ export function serializePlayHistory(entries: readonly PlayHistoryEntry[]): stri
   return JSON.stringify(stored);
 }
 
-export function calculateCurrentStreak(
+export function calculatePlayHistoryStats(
   entries: readonly PlayHistoryEntry[],
   currentDateKey: string,
-): number {
+): PlayHistoryStats {
   const currentTimestamp = parseDateKey(currentDateKey);
   if (currentTimestamp === null) {
     throw new RangeError("currentDateKeyは実在するYYYY-MM-DD形式で指定してください。");
   }
 
   const normalized = normalizeEntries(entries);
-  const playedTimestamps = new Set(
-    normalized
-      .map((entry) => parseDateKey(entry.dateKey))
-      .filter((timestamp): timestamp is number => timestamp !== null),
-  );
+  const playedTimestamps = getPlayedTimestamps(normalized);
+  const totalScore = normalized.reduce((sum, entry) => sum + entry.totalScore, 0);
 
-  const todayPlayed = playedTimestamps.has(currentTimestamp);
-  const startTimestamp = todayPlayed ? currentTimestamp : currentTimestamp - DAY_IN_MILLISECONDS;
+  return {
+    playCount: normalized.length,
+    currentStreak: calculateCurrentStreakFromTimestamps(playedTimestamps, currentTimestamp),
+    longestStreak: calculateLongestStreak(playedTimestamps),
+    bestScore: normalized.reduce((best, entry) => Math.max(best, entry.totalScore), 0),
+    averageScore: normalized.length === 0 ? 0 : Math.round(totalScore / normalized.length),
+  };
+}
 
-  if (!playedTimestamps.has(startTimestamp)) return 0;
-
-  let streak = 0;
-  let cursor = startTimestamp;
-
-  while (playedTimestamps.has(cursor)) {
-    streak += 1;
-    cursor -= DAY_IN_MILLISECONDS;
-  }
-
-  return streak;
+export function calculateCurrentStreak(
+  entries: readonly PlayHistoryEntry[],
+  currentDateKey: string,
+): number {
+  return calculatePlayHistoryStats(entries, currentDateKey).currentStreak;
 }

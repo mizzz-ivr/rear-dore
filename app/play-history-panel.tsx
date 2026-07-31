@@ -1,9 +1,9 @@
-import type { PlayHistoryEntry } from "@/lib/history";
+import type { PlayHistoryEntry, PlayHistoryStats } from "@/lib/history";
 import { buildRarityGrid } from "@/lib/share";
 
 type PlayHistoryPanelProps = Readonly<{
   entries: readonly PlayHistoryEntry[];
-  currentStreak: number;
+  stats: PlayHistoryStats;
 }>;
 
 function formatDate(dateKey: string): string {
@@ -11,7 +11,7 @@ function formatDate(dateKey: string): string {
   return `${Number(month)}/${Number(day)}`;
 }
 
-export function PlayHistoryPanel({ entries, currentStreak }: PlayHistoryPanelProps) {
+export function PlayHistoryPanel({ entries, stats }: PlayHistoryPanelProps) {
   const visibleEntries = entries.slice(0, 7);
 
   return (
@@ -26,19 +26,37 @@ export function PlayHistoryPanel({ entries, currentStreak }: PlayHistoryPanelPro
             このブラウザの記録
           </h2>
         </div>
-        <p className="text-xs text-zinc-500">最大30日分</p>
+        <p className="shrink-0 text-right text-xs leading-5 text-zinc-500">
+          保存{stats.playCount}日
+          <br />
+          最大30日分
+        </p>
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white/5 p-4">
-          <dt className="text-sm text-zinc-400">連続プレイ</dt>
-          <dd className="mt-1 text-2xl font-bold tabular-nums text-sky-200">
-            {currentStreak}日
+        <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
+          <dt className="text-xs leading-5 text-zinc-400 sm:text-sm">現在の連続</dt>
+          <dd className="mt-1 text-xl font-bold tabular-nums text-sky-200 sm:text-2xl">
+            {stats.currentStreak}日
           </dd>
         </div>
-        <div className="rounded-2xl bg-white/5 p-4">
-          <dt className="text-sm text-zinc-400">保存日数</dt>
-          <dd className="mt-1 text-2xl font-bold tabular-nums">{entries.length}日</dd>
+        <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
+          <dt className="text-xs leading-5 text-zinc-400 sm:text-sm">最長連続</dt>
+          <dd className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">
+            {stats.longestStreak}日
+          </dd>
+        </div>
+        <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
+          <dt className="text-xs leading-5 text-zinc-400 sm:text-sm">自己ベスト</dt>
+          <dd className="mt-1 text-xl font-bold tabular-nums text-lime-200 sm:text-2xl">
+            {stats.bestScore.toLocaleString("ja-JP")}点
+          </dd>
+        </div>
+        <div className="rounded-2xl bg-white/5 p-3 sm:p-4">
+          <dt className="text-xs leading-5 text-zinc-400 sm:text-sm">平均点</dt>
+          <dd className="mt-1 text-xl font-bold tabular-nums sm:text-2xl">
+            {stats.averageScore.toLocaleString("ja-JP")}点
+          </dd>
         </div>
       </dl>
 
