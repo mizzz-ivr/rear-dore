@@ -1,6 +1,7 @@
 import type { Rarity } from "./game";
 
 export const PLAY_HISTORY_STORAGE_KEY = "rear-dore:play-history";
+export const PLAY_HISTORY_TREND_LIMIT = 7;
 
 const PLAY_HISTORY_VERSION = 1;
 const MAX_HISTORY_ENTRIES = 30;
@@ -24,6 +25,20 @@ export type PlayHistoryStats = Readonly<{
   longestStreak: number;
   bestScore: number;
   averageScore: number;
+}>;
+
+export type PlayHistoryTrendPoint = Readonly<{
+  dateKey: string;
+  totalScore: number;
+  position: number;
+  scoreRatio: number;
+}>;
+
+export type PlayHistoryTrend = Readonly<{
+  points: readonly PlayHistoryTrendPoint[];
+  latestChange: number | null;
+  minScore: number;
+  maxScore: number;
 }>;
 
 type StoredPlayHistory = {
@@ -162,6 +177,12 @@ function calculateLongestStreak(playedTimestamps: readonly number[]): number {
   return longestStreak;
 }
 
+function assertTrendLimit(limit: number): void {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_HISTORY_ENTRIES) {
+    throw new RangeError(`limitは1から${MAX_HISTORY_ENTRIES}の整数で指定してください。`);
+  }
+}
+
 export function createPlayHistoryEntry({
   dateKey,
   questionSetId,
@@ -243,6 +264,47 @@ export function calculatePlayHistoryStats(
     longestStreak: calculateLongestStreak(playedTimestamps),
     bestScore: normalized.reduce((best, entry) => Math.max(best, entry.totalScore), 0),
     averageScore: normalized.length === 0 ? 0 : Math.round(totalScore / normalized.length),
+  };
+}
+
+export function calculatePlayHistoryTrend(
+  entries: readonly PlayHistoryEntry[],
+  limit = PLAY_HISTORY_TREND_LIMIT,
+): PlayHistoryTrend {
+  assertTrendLimit(limit);
+
+  const chronologicalEntries = normalizeEntries(entries).slice(0, limit).reverse();
+  if (chronologicalEntries.length === 0) {
+    return {
+      points: [],
+      latestChange: null,
+      minScore: 0,
+      maxScore: 0,
+    };
+  }
+
+  const scores = chronologicalEntries.map((entry) => entry.totalScore);
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+  const scoreRange = maxScore - minScore;
+  const pointCount = chronologicalEntries.length;
+  const points = chronologicalEntries.map((entry, index) => ({
+    dateKey: entry.dateKey,
+    totalScore: entry.totalScore,
+    position: pointCount === 1 ? 0.5 : index / (pointCount - 1),
+    scoreRatio: scoreRange === 0 ? 0.5 : (entry.totalScore - minScore) / scoreRange,
+  }));
+  const latestChange =
+    pointCount === 1
+      ? null
+      : chronologicalEntries[pointCount - 1].totalScore -
+        chronologicalEntries[pointCount - 2].totalScore;
+
+  return {
+    points,
+    latestChange,
+    minScore,
+    maxScore,
   };
 }
 

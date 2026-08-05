@@ -1,9 +1,15 @@
-import type { PlayHistoryEntry, PlayHistoryStats } from "@/lib/history";
+import { PlayHistoryTrendChart } from "@/app/play-history-trend";
+import type {
+  PlayHistoryEntry,
+  PlayHistoryStats,
+  PlayHistoryTrend,
+} from "@/lib/history";
 import { buildRarityGrid } from "@/lib/share";
 
 type PlayHistoryPanelProps = Readonly<{
   entries: readonly PlayHistoryEntry[];
   stats: PlayHistoryStats;
+  trend: PlayHistoryTrend;
 }>;
 
 function formatDate(dateKey: string): string {
@@ -11,7 +17,7 @@ function formatDate(dateKey: string): string {
   return `${Number(month)}/${Number(day)}`;
 }
 
-export function PlayHistoryPanel({ entries, stats }: PlayHistoryPanelProps) {
+export function PlayHistoryPanel({ entries, stats, trend }: PlayHistoryPanelProps) {
   const visibleEntries = entries.slice(0, 7);
 
   return (
@@ -59,6 +65,8 @@ export function PlayHistoryPanel({ entries, stats }: PlayHistoryPanelProps) {
           </dd>
         </div>
       </dl>
+
+      <PlayHistoryTrendChart trend={trend} />
 
       {visibleEntries.length > 0 ? (
         <ol className="mt-5 divide-y divide-white/8" aria-label="直近のプレイ履歴">

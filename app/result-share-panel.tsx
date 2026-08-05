@@ -5,6 +5,7 @@ import { PlayHistoryPanel } from "@/app/play-history-panel";
 import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
 import {
   calculatePlayHistoryStats,
+  calculatePlayHistoryTrend,
   createPlayHistoryEntry,
   PLAY_HISTORY_STORAGE_KEY,
   restorePlayHistory,
@@ -78,6 +79,10 @@ export function ResultSharePanel({
     () => calculatePlayHistoryStats(playHistory, dateKey),
     [dateKey, playHistory],
   );
+  const playHistoryTrend = useMemo(
+    () => calculatePlayHistoryTrend(playHistory),
+    [playHistory],
+  );
 
   useEffect(() => {
     let nextHistory = [currentHistoryEntry];
@@ -137,7 +142,11 @@ export function ResultSharePanel({
 
   return (
     <>
-      <PlayHistoryPanel entries={playHistory} stats={playHistoryStats} />
+      <PlayHistoryPanel
+        entries={playHistory}
+        stats={playHistoryStats}
+        trend={playHistoryTrend}
+      />
 
       <section
         className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
