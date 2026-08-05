@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AchievementPanel } from "@/app/achievement-panel";
 import { PlayHistoryPanel } from "@/app/play-history-panel";
+import { calculateLocalAchievements } from "@/lib/achievements";
 import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
 import {
   calculatePlayHistoryStats,
@@ -83,6 +85,10 @@ export function ResultSharePanel({
     () => calculatePlayHistoryTrend(playHistory),
     [playHistory],
   );
+  const localAchievements = useMemo(
+    () => calculateLocalAchievements(playHistory, playHistoryStats),
+    [playHistory, playHistoryStats],
+  );
 
   useEffect(() => {
     let nextHistory = [currentHistoryEntry];
@@ -147,6 +153,8 @@ export function ResultSharePanel({
         stats={playHistoryStats}
         trend={playHistoryTrend}
       />
+
+      <AchievementPanel summary={localAchievements} />
 
       <section
         className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
