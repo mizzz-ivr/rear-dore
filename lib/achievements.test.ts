@@ -6,7 +6,11 @@ import {
   upsertPlayHistory,
   type PlayHistoryEntry,
 } from "./history";
-import { calculateLocalAchievements, type LocalAchievementId } from "./achievements";
+import {
+  calculateLocalAchievements,
+  calculateNewlyUnlockedAchievements,
+  type LocalAchievementId,
+} from "./achievements";
 
 const defaultRarities: Rarity[] = ["SSR", "SR", "R", "N", "多数派"];
 
@@ -44,6 +48,18 @@ function getAchievement(
 
   if (!achievement) throw new Error(`実績${id}が見つかりません。`);
   return achievement;
+}
+
+function getAchievementIds(
+  previousEntries: readonly PlayHistoryEntry[],
+  nextEntries: readonly PlayHistoryEntry[],
+  currentDateKey = "2026-08-05",
+): LocalAchievementId[] {
+  return calculateNewlyUnlockedAchievements(
+    previousEntries,
+    nextEntries,
+    currentDateKey,
+  ).map((achievement) => achievement.id);
 }
 
 describe("calculateLocalAchievements", () => {
@@ -161,5 +177,92 @@ describe("calculateLocalAchievements", () => {
 
     expect(summary.unlockedCount).toBe(6);
     expect(summary.achievements.every((achievement) => achievement.unlocked)).toBe(true);
+  });
+});
+
+describe("calculateNewlyUnlockedAchievements", () => {
+  it("空履歴からの初回プレイでは初回実績だけを返す", () => {
+    const nextEntries = [createEntry("2026-08-05")];
+
+    expect(getAchievementIds([], nextEntries)).toEqual(["first-play"]);
+  });
+
+  it("解除状態が変わらない場合は空配列を返す", () => {
+    const previousEntries = [createEntry("2026-08-03")];
+    const nextEntries = upsertPlayHistory(previousEntries, createEntry("2026-08-05"));
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual([]);
+  });
+
+  it("5日目の追加では常連実績だけを返す", () => {
+    const previousEntries = [
+      createEntry("2026-08-04"),
+      createEntry("2026-08-02"),
+      createEntry("2026-07-31"),
+      createEntry("2026-07-29"),
+    ];
+    const nextEntries = upsertPlayHistory(previousEntries, createEntry("2026-08-05"));
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual(["five-play-days"]);
+  });
+
+  it("1回のプレイで複数解除した場合は実績定義順にすべて返す", () => {
+    const previousEntries = [createEntry("2026-08-04"), createEntry("2026-08-03")];
+    const nextEntries = upsertPlayHistory(
+      previousEntries,
+      createEntry("2026-08-05", 3_500, ["UR", "SSR", "SR", "R", "N"]),
+    );
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual([
+      "three-day-streak",
+      "ur-discovery",
+      "score-3000",
+      "all-minority",
+    ]);
+  });
+
+  it("以前から解除済みの実績は再通知対象に含めない", () => {
+    const previousEntries = [
+      createEntry("2026-08-04", 3_500, ["UR", "SSR", "SR", "R", "N"]),
+      createEntry("2026-08-03"),
+      createEntry("2026-08-02"),
+      createEntry("2026-07-31"),
+      createEntry("2026-07-29"),
+    ];
+    const nextEntries = upsertPlayHistory(previousEntries, createEntry("2026-08-05"));
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual([]);
+  });
+
+  it("同日再プレイで条件を達成した実績だけを返す", () => {
+    const previousEntries = [createEntry("2026-08-05")];
+    const nextEntries = upsertPlayHistory(
+      previousEntries,
+      createEntry("2026-08-05", 3_500, ["UR", "SSR", "SR", "R", "N"]),
+    );
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual([
+      "ur-discovery",
+      "score-3000",
+      "all-minority",
+    ]);
+  });
+
+  it("同日再プレイで条件を満たさなくなっても解除通知は返さない", () => {
+    const previousEntries = [
+      createEntry("2026-08-05", 3_500, ["UR", "SSR", "SR", "R", "N"]),
+    ];
+    const nextEntries = upsertPlayHistory(
+      previousEntries,
+      createEntry("2026-08-05", 1_500, defaultRarities),
+    );
+
+    expect(getAchievementIds(previousEntries, nextEntries)).toEqual([]);
+  });
+
+  it("不正な基準日では例外を送出する", () => {
+    expect(() =>
+      calculateNewlyUnlockedAchievements([], [createEntry("2026-08-05")], "2026-02-30"),
+    ).toThrow(RangeError);
   });
 });

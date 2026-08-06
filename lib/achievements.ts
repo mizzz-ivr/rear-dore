@@ -1,4 +1,8 @@
-import type { PlayHistoryEntry, PlayHistoryStats } from "./history";
+import {
+  calculatePlayHistoryStats,
+  type PlayHistoryEntry,
+  type PlayHistoryStats,
+} from "./history";
 
 export type LocalAchievementId =
   | "first-play"
@@ -115,4 +119,28 @@ export function calculateLocalAchievements(
     totalCount: achievements.length,
     achievements,
   };
+}
+
+export function calculateNewlyUnlockedAchievements(
+  previousEntries: readonly PlayHistoryEntry[],
+  nextEntries: readonly PlayHistoryEntry[],
+  currentDateKey: string,
+): readonly LocalAchievement[] {
+  const previousSummary = calculateLocalAchievements(
+    previousEntries,
+    calculatePlayHistoryStats(previousEntries, currentDateKey),
+  );
+  const nextSummary = calculateLocalAchievements(
+    nextEntries,
+    calculatePlayHistoryStats(nextEntries, currentDateKey),
+  );
+  const previouslyUnlockedIds = new Set(
+    previousSummary.achievements
+      .filter((achievement) => achievement.unlocked)
+      .map((achievement) => achievement.id),
+  );
+
+  return nextSummary.achievements.filter(
+    (achievement) => achievement.unlocked && !previouslyUnlockedIds.has(achievement.id),
+  );
 }

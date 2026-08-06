@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AchievementPanel } from "@/app/achievement-panel";
+import { AchievementUnlockNotice } from "@/app/achievement-unlock-notice";
 import { PlayHistoryPanel } from "@/app/play-history-panel";
-import { calculateLocalAchievements } from "@/lib/achievements";
+import {
+  calculateLocalAchievements,
+  calculateNewlyUnlockedAchievements,
+  type LocalAchievement,
+} from "@/lib/achievements";
 import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
 import {
   calculatePlayHistoryStats,
@@ -31,6 +36,12 @@ type ResultSharePanelProps = Readonly<{
 }>;
 
 type ShareStatus = "shared" | "copied" | "x-opened" | "failed" | null;
+
+type HistoryInitialization = Readonly<{
+  entrySignature: string;
+  history: PlayHistoryEntry[];
+  newlyUnlockedAchievements: readonly LocalAchievement[];
+}>;
 
 const statusMessage: Record<Exclude<ShareStatus, null>, string> = {
   shared: "結果を共有しました。",
@@ -63,7 +74,15 @@ export function ResultSharePanel({
       rarities: answers.map((answer) => answer.rarity),
     });
   }, [answers, dateKey, playerTitle, questionSetTitle, totalScore]);
+  const currentEntrySignature = useMemo(
+    () => JSON.stringify(currentHistoryEntry),
+    [currentHistoryEntry],
+  );
+  const historyInitializationRef = useRef<HistoryInitialization | null>(null);
   const [playHistory, setPlayHistory] = useState<PlayHistoryEntry[]>(() => [currentHistoryEntry]);
+  const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<
+    readonly LocalAchievement[]
+  >([]);
   const rarityGrid = useMemo(() => buildRarityGrid(answers), [answers]);
   const rarityText = answers.map((answer) => answer.rarity).join("、");
   const shareText = useMemo(
@@ -91,24 +110,45 @@ export function ResultSharePanel({
   );
 
   useEffect(() => {
-    let nextHistory = [currentHistoryEntry];
+    let initialization = historyInitializationRef.current;
 
-    try {
-      const restoredHistory = restorePlayHistory(
-        window.localStorage.getItem(PLAY_HISTORY_STORAGE_KEY),
-      );
-      nextHistory = upsertPlayHistory(restoredHistory, currentHistoryEntry);
-      window.localStorage.setItem(
-        PLAY_HISTORY_STORAGE_KEY,
-        serializePlayHistory(nextHistory),
-      );
-    } catch {
-      // 履歴保存に失敗しても、総合結果と共有機能は継続する。
+    if (!initialization || initialization.entrySignature !== currentEntrySignature) {
+      let nextHistory = [currentHistoryEntry];
+      let unlockedAchievements: readonly LocalAchievement[] = [];
+
+      try {
+        const restoredHistory = restorePlayHistory(
+          window.localStorage.getItem(PLAY_HISTORY_STORAGE_KEY),
+        );
+        nextHistory = upsertPlayHistory(restoredHistory, currentHistoryEntry);
+        const candidateAchievements = calculateNewlyUnlockedAchievements(
+          restoredHistory,
+          nextHistory,
+          dateKey,
+        );
+        window.localStorage.setItem(
+          PLAY_HISTORY_STORAGE_KEY,
+          serializePlayHistory(nextHistory),
+        );
+        unlockedAchievements = candidateAchievements;
+      } catch {
+        // 履歴の読み書きに失敗した場合は、誤った解除通知を出さず結果表示を継続する。
+      }
+
+      initialization = {
+        entrySignature: currentEntrySignature,
+        history: nextHistory,
+        newlyUnlockedAchievements: unlockedAchievements,
+      };
+      historyInitializationRef.current = initialization;
     }
 
-    const frameId = window.requestAnimationFrame(() => setPlayHistory(nextHistory));
+    const frameId = window.requestAnimationFrame(() => {
+      setPlayHistory(initialization.history);
+      setNewlyUnlockedAchievements(initialization.newlyUnlockedAchievements);
+    });
     return () => window.cancelAnimationFrame(frameId);
-  }, [currentHistoryEntry]);
+  }, [currentEntrySignature, currentHistoryEntry, dateKey]);
 
   async function shareResult(): Promise<void> {
     setShareStatus(null);
@@ -148,6 +188,8 @@ export function ResultSharePanel({
 
   return (
     <>
+      <AchievementUnlockNotice achievements={newlyUnlockedAchievements} />
+
       <PlayHistoryPanel
         entries={playHistory}
         stats={playHistoryStats}
