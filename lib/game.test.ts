@@ -8,15 +8,48 @@ import {
 } from "./game";
 
 describe("getDailyQuestionSet", () => {
-  it("日本時間の日付ごとに問題セットを順番に切り替える", () => {
-    expect(getDailyQuestionSet("2026-07-28").id).toBe(questionSets[0].id);
-    expect(getDailyQuestionSet("2026-07-29").id).toBe(questionSets[1].id);
-    expect(getDailyQuestionSet("2026-07-30").id).toBe(questionSets[2].id);
-    expect(getDailyQuestionSet("2026-07-31").id).toBe(questionSets[0].id);
+  it.each([
+    ["2026-07-27", "daily-03-choice"],
+    ["2026-07-28", "daily-01-imagination"],
+    ["2026-07-29", "daily-02-everyday"],
+    ["2026-07-30", "daily-03-choice"],
+    ["2026-07-31", "daily-01-imagination"],
+    ["2026-08-01", "daily-02-everyday"],
+    ["2026-08-02", "daily-03-choice"],
+    ["2026-08-03", "daily-01-imagination"],
+    ["2026-08-04", "daily-02-everyday"],
+    ["2026-08-05", "daily-03-choice"],
+    ["2026-08-06", "daily-01-imagination"],
+    ["2026-08-07", "daily-02-everyday"],
+  ] as const)("旧ローテーションの%sを%sのまま維持する", (dateKey, questionSetId) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(questionSetId);
   });
 
-  it("基準日より前の日付も決定的に選択する", () => {
-    expect(getDailyQuestionSet("2026-07-27").id).toBe(questionSets[2].id);
+  it.each([
+    ["2026-08-08", "daily-03-choice"],
+    ["2026-08-09", "daily-04-digital"],
+    ["2026-08-10", "daily-05-food"],
+    ["2026-08-11", "daily-06-outing"],
+    ["2026-08-12", "daily-07-odd"],
+    ["2026-08-13", "daily-01-imagination"],
+    ["2026-08-14", "daily-02-everyday"],
+    ["2026-08-15", "daily-03-choice"],
+  ] as const)("固定7日サイクルの%sを%sへ割り当てる", (dateKey, questionSetId) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(questionSetId);
+  });
+
+  it("7セット・35問のコンテンツを登録する", () => {
+    expect(questionSets).toHaveLength(7);
+    expect(questionSets.flatMap((questionSet) => questionSet.questions)).toHaveLength(35);
+    expect(questionSets.map((questionSet) => questionSet.id)).toEqual([
+      "daily-01-imagination",
+      "daily-02-everyday",
+      "daily-03-choice",
+      "daily-04-digital",
+      "daily-05-food",
+      "daily-06-outing",
+      "daily-07-odd",
+    ]);
   });
 
   it.each(["", "2026/07/28", "2026-02-30", "not-a-date"])(

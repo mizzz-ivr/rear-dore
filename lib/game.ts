@@ -1,3 +1,5 @@
+import { extraQuestionSets } from "./extra-question-sets";
+
 export type Rarity = "UR" | "SSR" | "SR" | "R" | "N" | "多数派";
 
 export type Choice = {
@@ -27,8 +29,25 @@ export type AnswerResult = {
   score: number;
 };
 
-const ROTATION_EPOCH_UTC = Date.UTC(2026, 6, 28);
+const LEGACY_ROTATION_EPOCH_UTC = Date.UTC(2026, 6, 28);
+const STABLE_ROTATION_EPOCH_UTC = Date.UTC(2026, 7, 8);
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
+
+const LEGACY_ROTATION_QUESTION_SET_IDS = [
+  "daily-01-imagination",
+  "daily-02-everyday",
+  "daily-03-choice",
+] as const;
+
+const STABLE_ROTATION_QUESTION_SET_IDS = [
+  "daily-03-choice",
+  "daily-04-digital",
+  "daily-05-food",
+  "daily-06-outing",
+  "daily-07-odd",
+  "daily-01-imagination",
+  "daily-02-everyday",
+] as const;
 
 export const questionSets: QuestionSet[] = [
   {
@@ -214,6 +233,7 @@ export const questionSets: QuestionSet[] = [
       },
     ],
   },
+  ...extraQuestionSets,
 ];
 
 export const DEFAULT_QUESTION_SET = questionSets[0];
@@ -242,15 +262,44 @@ function parseDateKey(dateKey: string): number {
   return timestamp;
 }
 
-export function getDailyQuestionSet(dateKey: string): QuestionSet {
-  if (questionSets.length === 0) {
-    throw new RangeError("問題セットが登録されていません。");
+function getQuestionSetById(questionSetId: string): QuestionSet {
+  const questionSet = questionSets.find((candidate) => candidate.id === questionSetId);
+  if (!questionSet) {
+    throw new RangeError(`ローテーション対象の問題セット「${questionSetId}」が見つかりません。`);
+  }
+  return questionSet;
+}
+
+function getRotationQuestionSet(
+  timestamp: number,
+  epochTimestamp: number,
+  questionSetIds: readonly string[],
+): QuestionSet {
+  if (questionSetIds.length === 0) {
+    throw new RangeError("ローテーション対象の問題セットが登録されていません。");
   }
 
+  const elapsedDays = Math.floor((timestamp - epochTimestamp) / DAY_IN_MILLISECONDS);
+  const index = ((elapsedDays % questionSetIds.length) + questionSetIds.length) % questionSetIds.length;
+  return getQuestionSetById(questionSetIds[index]);
+}
+
+export function getDailyQuestionSet(dateKey: string): QuestionSet {
   const timestamp = parseDateKey(dateKey);
-  const elapsedDays = Math.floor((timestamp - ROTATION_EPOCH_UTC) / DAY_IN_MILLISECONDS);
-  const index = ((elapsedDays % questionSets.length) + questionSets.length) % questionSets.length;
-  return questionSets[index];
+
+  if (timestamp < STABLE_ROTATION_EPOCH_UTC) {
+    return getRotationQuestionSet(
+      timestamp,
+      LEGACY_ROTATION_EPOCH_UTC,
+      LEGACY_ROTATION_QUESTION_SET_IDS,
+    );
+  }
+
+  return getRotationQuestionSet(
+    timestamp,
+    STABLE_ROTATION_EPOCH_UTC,
+    STABLE_ROTATION_QUESTION_SET_IDS,
+  );
 }
 
 export function getRarity(percentage: number): Rarity {
