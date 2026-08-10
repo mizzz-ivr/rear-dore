@@ -33,16 +33,24 @@ export default function PracticePage() {
   const pendingFocusRef = useRef<PendingFocusTarget>(null);
 
   useEffect(() => {
+    let nextUnlockedQuestionSets: QuestionSet[] = [];
+    let nextHistoryReadFailed = false;
+
     try {
       const rawValue = window.localStorage.getItem(PLAY_HISTORY_STORAGE_KEY);
       const history = restorePlayHistory(rawValue);
-      setUnlockedQuestionSets(getUnlockedPracticeQuestionSets(history, questionSets));
+      nextUnlockedQuestionSets = getUnlockedPracticeQuestionSets(history, questionSets);
     } catch {
-      setHistoryReadFailed(true);
-      setUnlockedQuestionSets([]);
-    } finally {
-      setHistoryReady(true);
+      nextHistoryReadFailed = true;
     }
+
+    const frameId = window.requestAnimationFrame(() => {
+      setUnlockedQuestionSets(nextUnlockedQuestionSets);
+      setHistoryReadFailed(nextHistoryReadFailed);
+      setHistoryReady(true);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
