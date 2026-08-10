@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AchievementPanel } from "@/app/achievement-panel";
 import { AchievementUnlockNotice } from "@/app/achievement-unlock-notice";
@@ -197,6 +198,21 @@ export function ResultSharePanel({
       />
 
       <AchievementPanel summary={localAchievements} />
+
+      <section
+        className="rounded-[2rem] border border-sky-300/20 bg-sky-300/8 p-5 text-center sm:p-7"
+        aria-labelledby="practice-title"
+      >
+        <p id="practice-title" className="font-semibold text-sky-100">
+          クリア済みテーマをもう一度
+        </p>
+        <p className="mt-2 text-sm leading-6 text-zinc-300">
+          練習モードでは、プレイ済みテーマを履歴・連続日数・実績に影響させず何度でも遊べます。
+        </p>
+        <Link href="/practice" className="secondary-button mt-5 block w-full text-center">
+          練習モードへ
+        </Link>
+      </section>
 
       <section
         className="rounded-[2rem] border border-white/10 bg-zinc-950/75 p-5 sm:p-7"
