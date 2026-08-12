@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AchievementPanel } from "@/app/achievement-panel";
 import { AchievementUnlockNotice } from "@/app/achievement-unlock-notice";
 import { PlayHistoryPanel } from "@/app/play-history-panel";
+import { WeeklyChallengePanel } from "@/app/weekly-challenge-panel";
 import {
   calculateLocalAchievements,
   calculateNewlyUnlockedAchievements,
@@ -27,6 +28,7 @@ import {
   buildShareText,
   buildXShareUrl,
 } from "@/lib/share";
+import { calculateWeeklyChallengeSummary } from "@/lib/weekly-challenges";
 
 type ResultSharePanelProps = Readonly<{
   dateKey: string;
@@ -104,6 +106,10 @@ export function ResultSharePanel({
   const playHistoryTrend = useMemo(
     () => calculatePlayHistoryTrend(playHistory),
     [playHistory],
+  );
+  const weeklyChallengeSummary = useMemo(
+    () => calculateWeeklyChallengeSummary(playHistory, dateKey),
+    [dateKey, playHistory],
   );
   const localAchievements = useMemo(
     () => calculateLocalAchievements(playHistory, playHistoryStats),
@@ -196,6 +202,8 @@ export function ResultSharePanel({
         stats={playHistoryStats}
         trend={playHistoryTrend}
       />
+
+      <WeeklyChallengePanel summary={weeklyChallengeSummary} />
 
       <AchievementPanel summary={localAchievements} />
 
