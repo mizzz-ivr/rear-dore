@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DailyMissionPanel } from "@/app/daily-mission-panel";
 import { ResultSharePanel } from "@/app/result-share-panel";
 import {
   calculateResult,
@@ -344,6 +345,8 @@ export default function HomePage() {
     return <StorageLoadingState />;
   }
 
+  const activeDateKey = dailyDateKey ?? getJapanDateKey();
+
   if (completed) {
     const title = getPlayerTitle(totalScore);
 
@@ -365,6 +368,8 @@ export default function HomePage() {
           {crossTabNoticeVisible && (
             <CrossTabSyncNotice onDismiss={() => setCrossTabNoticeVisible(false)} />
           )}
+
+          <DailyMissionPanel dateKey={activeDateKey} answers={answers} gameCompleted />
 
           <div className="result-shell overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6 sm:p-10">
             <h2
@@ -407,7 +412,7 @@ export default function HomePage() {
           </div>
 
           <ResultSharePanel
-            dateKey={dailyDateKey ?? getJapanDateKey()}
+            dateKey={activeDateKey}
             questionSetTitle={questionSet.title}
             totalScore={totalScore}
             playerTitle={title}
@@ -450,6 +455,8 @@ export default function HomePage() {
         {crossTabNoticeVisible && (
           <CrossTabSyncNotice onDismiss={() => setCrossTabNoticeVisible(false)} />
         )}
+
+        <DailyMissionPanel dateKey={activeDateKey} answers={answers} />
 
         <div
           role="progressbar"
