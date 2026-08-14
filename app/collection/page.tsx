@@ -66,7 +66,7 @@ export default function CollectionPage() {
   const [storageFailed, setStorageFailed] = useState(false);
 
   useEffect(() => {
-    function applyState(): void {
+    function applyState(): () => void {
       const nextState = readCollectionState();
       const frameId = window.requestAnimationFrame(() => {
         setSummary(nextState.summary);
@@ -74,7 +74,7 @@ export default function CollectionPage() {
         setStorageReady(true);
       });
 
-      return window.cancelAnimationFrame.bind(window, frameId);
+      return () => window.cancelAnimationFrame(frameId);
     }
 
     let cancelFrame = applyState();
