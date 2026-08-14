@@ -11,7 +11,7 @@ import {
   calculateNewlyUnlockedAchievements,
   type LocalAchievement,
 } from "@/lib/achievements";
-import { getDailyQuestionSet, type AnswerResult } from "@/lib/game";
+import { getDailyQuestionSet, questionSets, type AnswerResult } from "@/lib/game";
 import {
   calculatePlayHistoryStats,
   calculatePlayHistoryTrend,
@@ -28,6 +28,12 @@ import {
   buildShareText,
   buildXShareUrl,
 } from "@/lib/share";
+import {
+  restoreThemeCollection,
+  serializeThemeCollection,
+  synchronizeThemeCollection,
+  THEME_COLLECTION_STORAGE_KEY,
+} from "@/lib/theme-collection";
 import { calculateWeeklyChallengeSummary } from "@/lib/weekly-challenges";
 
 type ResultSharePanelProps = Readonly<{
@@ -142,6 +148,24 @@ export function ResultSharePanel({
         // 履歴の読み書きに失敗した場合は、誤った解除通知を出さず結果表示を継続する。
       }
 
+      try {
+        const restoredCollection = restoreThemeCollection(
+          window.localStorage.getItem(THEME_COLLECTION_STORAGE_KEY),
+          questionSets,
+        );
+        const synchronizedCollection = synchronizeThemeCollection(
+          restoredCollection,
+          nextHistory,
+          questionSets,
+        );
+        window.localStorage.setItem(
+          THEME_COLLECTION_STORAGE_KEY,
+          serializeThemeCollection(synchronizedCollection, questionSets),
+        );
+      } catch {
+        // コレクション保存に失敗しても履歴・実績・共有は継続する。
+      }
+
       initialization = {
         entrySignature: currentEntrySignature,
         history: nextHistory,
@@ -206,6 +230,21 @@ export function ResultSharePanel({
       <WeeklyChallengePanel summary={weeklyChallengeSummary} />
 
       <AchievementPanel summary={localAchievements} />
+
+      <section
+        className="rounded-[2rem] border border-violet-300/20 bg-violet-300/8 p-5 text-center sm:p-7"
+        aria-labelledby="collection-title"
+      >
+        <p id="collection-title" className="font-semibold text-violet-100">
+          今日のテーマをコレクションへ登録しました
+        </p>
+        <p className="mt-2 text-sm leading-6 text-zinc-300">
+          出会ったテーマを集めて、10テーマのコンプリートを目指せます。未発見テーマの名前は図鑑でも伏せています。
+        </p>
+        <Link href="/collection" className="secondary-button mt-5 block w-full text-center">
+          テーマコレクションを見る
+        </Link>
+      </section>
 
       <section
         className="rounded-[2rem] border border-sky-300/20 bg-sky-300/8 p-5 text-center sm:p-7"
