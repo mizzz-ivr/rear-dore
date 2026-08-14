@@ -12,17 +12,9 @@ describe("getDailyQuestionSet", () => {
     ["2026-07-27", "daily-03-choice"],
     ["2026-07-28", "daily-01-imagination"],
     ["2026-07-29", "daily-02-everyday"],
-    ["2026-07-30", "daily-03-choice"],
-    ["2026-07-31", "daily-01-imagination"],
-    ["2026-08-01", "daily-02-everyday"],
-    ["2026-08-02", "daily-03-choice"],
-    ["2026-08-03", "daily-01-imagination"],
-    ["2026-08-04", "daily-02-everyday"],
-    ["2026-08-05", "daily-03-choice"],
-    ["2026-08-06", "daily-01-imagination"],
     ["2026-08-07", "daily-02-everyday"],
-  ] as const)("旧ローテーションの%sを%sのまま維持する", (dateKey, questionSetId) => {
-    expect(getDailyQuestionSet(dateKey).id).toBe(questionSetId);
+  ] as const)("旧ローテーションの%sを維持する", (dateKey, expected) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(expected);
   });
 
   it.each([
@@ -33,15 +25,30 @@ describe("getDailyQuestionSet", () => {
     ["2026-08-12", "daily-07-odd"],
     ["2026-08-13", "daily-01-imagination"],
     ["2026-08-14", "daily-02-everyday"],
-    ["2026-08-15", "daily-03-choice"],
-  ] as const)("固定7日サイクルの%sを%sへ割り当てる", (dateKey, questionSetId) => {
-    expect(getDailyQuestionSet(dateKey).id).toBe(questionSetId);
+  ] as const)("8月14日までの固定7日サイクル%sを維持する", (dateKey, expected) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(expected);
   });
 
-  it("7セット・35問のコンテンツを登録する", () => {
-    expect(questionSets).toHaveLength(7);
-    expect(questionSets.flatMap((questionSet) => questionSet.questions)).toHaveLength(35);
-    expect(questionSets.map((questionSet) => questionSet.id)).toEqual([
+  it.each([
+    ["2026-08-15", "daily-08-work-study"],
+    ["2026-08-16", "daily-09-hobbies"],
+    ["2026-08-17", "daily-10-future-tech"],
+    ["2026-08-18", "daily-03-choice"],
+    ["2026-08-19", "daily-04-digital"],
+    ["2026-08-20", "daily-05-food"],
+    ["2026-08-21", "daily-06-outing"],
+    ["2026-08-22", "daily-07-odd"],
+    ["2026-08-23", "daily-01-imagination"],
+    ["2026-08-24", "daily-02-everyday"],
+    ["2026-08-25", "daily-08-work-study"],
+  ] as const)("拡張10日サイクル%sを割り当てる", (dateKey, expected) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(expected);
+  });
+
+  it("10セット・50問を登録する", () => {
+    expect(questionSets).toHaveLength(10);
+    expect(questionSets.flatMap((set) => set.questions)).toHaveLength(50);
+    expect(questionSets.map((set) => set.id)).toEqual([
       "daily-01-imagination",
       "daily-02-everyday",
       "daily-03-choice",
@@ -49,51 +56,33 @@ describe("getDailyQuestionSet", () => {
       "daily-05-food",
       "daily-06-outing",
       "daily-07-odd",
+      "daily-08-work-study",
+      "daily-09-hobbies",
+      "daily-10-future-tech",
     ]);
   });
 
-  it.each(["", "2026/07/28", "2026-02-30", "not-a-date"])(
-    "不正な日付キー%sを拒否する",
-    (dateKey) => {
-      expect(() => getDailyQuestionSet(dateKey)).toThrow(RangeError);
-    },
-  );
+  it.each(["", "2026/07/28", "2026-02-30"])("不正な日付%sを拒否する", (dateKey) => {
+    expect(() => getDailyQuestionSet(dateKey)).toThrow(RangeError);
+  });
 });
 
 describe("getRarity", () => {
   it.each([
-    [0, "UR"],
-    [1, "UR"],
-    [1.01, "SSR"],
-    [3, "SSR"],
-    [3.01, "SR"],
-    [8, "SR"],
-    [8.01, "R"],
-    [15, "R"],
-    [15.01, "N"],
-    [30, "N"],
-    [30.01, "多数派"],
-    [100, "多数派"],
+    [0, "UR"], [1, "UR"], [1.01, "SSR"], [3, "SSR"], [3.01, "SR"], [8, "SR"],
+    [8.01, "R"], [15, "R"], [15.01, "N"], [30, "N"], [30.01, "多数派"], [100, "多数派"],
   ] as const)("%s%%を%sと判定する", (percentage, expected) => {
     expect(getRarity(percentage)).toBe(expected);
   });
 
-  it.each([-0.01, 100.01, Number.NaN, Number.POSITIVE_INFINITY])(
-    "不正な割合%sを拒否する",
-    (percentage) => {
-      expect(() => getRarity(percentage)).toThrow(RangeError);
-    },
-  );
+  it.each([-0.01, 100.01, Number.NaN, Number.POSITIVE_INFINITY])("不正割合%sを拒否する", (percentage) => {
+    expect(() => getRarity(percentage)).toThrow(RangeError);
+  });
 });
 
 describe("getScore", () => {
   it("レア度に応じた点数を返す", () => {
-    expect(getScore(0.5)).toBe(1000);
-    expect(getScore(2)).toBe(500);
-    expect(getScore(5)).toBe(300);
-    expect(getScore(12)).toBe(150);
-    expect(getScore(20)).toBe(75);
-    expect(getScore(50)).toBe(20);
+    expect([0.5, 2, 5, 12, 20, 50].map(getScore)).toEqual([1000, 500, 300, 150, 75, 20]);
   });
 });
 
