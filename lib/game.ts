@@ -1,3 +1,4 @@
+import { additionalQuestionSets } from "./additional-question-sets";
 import { extraQuestionSets } from "./extra-question-sets";
 
 export type Rarity = "UR" | "SSR" | "SR" | "R" | "N" | "多数派";
@@ -31,6 +32,7 @@ export type AnswerResult = {
 
 const LEGACY_ROTATION_EPOCH_UTC = Date.UTC(2026, 6, 28);
 const STABLE_ROTATION_EPOCH_UTC = Date.UTC(2026, 7, 8);
+const EXPANDED_ROTATION_EPOCH_UTC = Date.UTC(2026, 7, 15);
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 const LEGACY_ROTATION_QUESTION_SET_IDS = [
@@ -40,6 +42,19 @@ const LEGACY_ROTATION_QUESTION_SET_IDS = [
 ] as const;
 
 const STABLE_ROTATION_QUESTION_SET_IDS = [
+  "daily-03-choice",
+  "daily-04-digital",
+  "daily-05-food",
+  "daily-06-outing",
+  "daily-07-odd",
+  "daily-01-imagination",
+  "daily-02-everyday",
+] as const;
+
+const EXPANDED_ROTATION_QUESTION_SET_IDS = [
+  "daily-08-work-study",
+  "daily-09-hobbies",
+  "daily-10-future-tech",
   "daily-03-choice",
   "daily-04-digital",
   "daily-05-food",
@@ -234,6 +249,7 @@ export const questionSets: QuestionSet[] = [
     ],
   },
   ...extraQuestionSets,
+  ...additionalQuestionSets,
 ];
 
 export const DEFAULT_QUESTION_SET = questionSets[0];
@@ -295,10 +311,18 @@ export function getDailyQuestionSet(dateKey: string): QuestionSet {
     );
   }
 
+  if (timestamp < EXPANDED_ROTATION_EPOCH_UTC) {
+    return getRotationQuestionSet(
+      timestamp,
+      STABLE_ROTATION_EPOCH_UTC,
+      STABLE_ROTATION_QUESTION_SET_IDS,
+    );
+  }
+
   return getRotationQuestionSet(
     timestamp,
-    STABLE_ROTATION_EPOCH_UTC,
-    STABLE_ROTATION_QUESTION_SET_IDS,
+    EXPANDED_ROTATION_EPOCH_UTC,
+    EXPANDED_ROTATION_QUESTION_SET_IDS,
   );
 }
 
