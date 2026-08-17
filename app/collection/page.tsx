@@ -2,21 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ThemeCollectionBadgePanel } from "@/app/theme-collection-badge-panel";
 import { questionSets } from "@/lib/game";
 import {
   PLAY_HISTORY_STORAGE_KEY,
   restorePlayHistory,
 } from "@/lib/history";
 import {
+  calculateThemeCollectionBadges,
   calculateThemeCollectionSummary,
   restoreThemeCollection,
   serializeThemeCollection,
   synchronizeThemeCollection,
   THEME_COLLECTION_STORAGE_KEY,
+  type ThemeCollectionBadge,
   type ThemeCollectionSummary,
 } from "@/lib/theme-collection";
 
 const emptySummary = calculateThemeCollectionSummary([], questionSets);
+const emptyBadges = calculateThemeCollectionBadges([], questionSets);
 
 function formatDateKey(dateKey: string): string {
   const [year, month, day] = dateKey.split("-");
@@ -25,6 +29,7 @@ function formatDateKey(dateKey: string): string {
 
 type CollectionState = Readonly<{
   summary: ThemeCollectionSummary;
+  badges: readonly ThemeCollectionBadge[];
   failed: boolean;
 }>;
 
@@ -50,11 +55,13 @@ function readCollectionState(): CollectionState {
 
     return {
       summary: calculateThemeCollectionSummary(synchronized, questionSets),
+      badges: calculateThemeCollectionBadges(synchronized, questionSets),
       failed: false,
     };
   } catch {
     return {
       summary: emptySummary,
+      badges: emptyBadges,
       failed: true,
     };
   }
@@ -62,6 +69,7 @@ function readCollectionState(): CollectionState {
 
 export default function CollectionPage() {
   const [summary, setSummary] = useState<ThemeCollectionSummary>(emptySummary);
+  const [badges, setBadges] = useState<readonly ThemeCollectionBadge[]>(emptyBadges);
   const [storageReady, setStorageReady] = useState(false);
   const [storageFailed, setStorageFailed] = useState(false);
 
@@ -70,6 +78,7 @@ export default function CollectionPage() {
       const nextState = readCollectionState();
       const frameId = window.requestAnimationFrame(() => {
         setSummary(nextState.summary);
+        setBadges(nextState.badges);
         setStorageFailed(nextState.failed);
         setStorageReady(true);
       });
@@ -192,6 +201,8 @@ export default function CollectionPage() {
             />
           </div>
         </section>
+
+        <ThemeCollectionBadgePanel badges={badges} />
 
         <section aria-labelledby="theme-list-title">
           <div className="flex items-end justify-between gap-4">
