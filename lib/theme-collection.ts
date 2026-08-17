@@ -6,6 +6,30 @@ export const THEME_COLLECTION_STORAGE_KEY = "rear-dore:theme-collection";
 const THEME_COLLECTION_VERSION = 1;
 const MAX_DISCOVERIES = 100;
 
+const COLLECTION_BADGE_DEFINITIONS = [
+  {
+    id: "discover-3",
+    icon: "🧭",
+    title: "テーマ探索者",
+    description: "3テーマを発見する",
+    target: 3,
+  },
+  {
+    id: "discover-5",
+    icon: "📚",
+    title: "コレクター",
+    description: "5テーマを発見する",
+    target: 5,
+  },
+  {
+    id: "discover-10",
+    icon: "👑",
+    title: "テーママスター",
+    description: "10テーマを発見する",
+    target: 10,
+  },
+] as const;
+
 export type ThemeDiscovery = Readonly<{
   questionSetId: string;
   discoveredOn: string;
@@ -22,6 +46,16 @@ export type ThemeCollectionSummary = Readonly<{
   discoveredCount: number;
   totalCount: number;
   items: readonly ThemeCollectionItem[];
+}>;
+
+export type ThemeCollectionBadge = Readonly<{
+  id: (typeof COLLECTION_BADGE_DEFINITIONS)[number]["id"];
+  icon: string;
+  title: string;
+  description: string;
+  target: number;
+  current: number;
+  unlocked: boolean;
 }>;
 
 type StoredThemeCollection = Readonly<{
@@ -165,4 +199,64 @@ export function calculateThemeCollectionSummary(
     totalCount: questionSets.length,
     items,
   };
+}
+
+export function getNewlyDiscoveredTheme(
+  previousDiscoveries: readonly ThemeDiscovery[],
+  nextDiscoveries: readonly ThemeDiscovery[],
+  questionSetId: string,
+  questionSets: readonly QuestionSet[],
+): ThemeCollectionItem | null {
+  const previousIds = new Set(
+    normalizeDiscoveries(previousDiscoveries, questionSets).map(
+      (discovery) => discovery.questionSetId,
+    ),
+  );
+  if (previousIds.has(questionSetId)) return null;
+
+  const nextDiscovery = normalizeDiscoveries(nextDiscoveries, questionSets).find(
+    (discovery) => discovery.questionSetId === questionSetId,
+  );
+  if (!nextDiscovery) return null;
+
+  const questionSet = questionSets.find((candidate) => candidate.id === questionSetId);
+  if (!questionSet) return null;
+
+  return {
+    questionSetId,
+    title: questionSet.title,
+    discovered: true,
+    discoveredOn: nextDiscovery.discoveredOn,
+  };
+}
+
+export function calculateThemeCollectionBadges(
+  discoveries: readonly ThemeDiscovery[],
+  questionSets: readonly QuestionSet[],
+): readonly ThemeCollectionBadge[] {
+  const current = normalizeDiscoveries(discoveries, questionSets).length;
+
+  return COLLECTION_BADGE_DEFINITIONS.filter(
+    (definition) => definition.target <= questionSets.length,
+  ).map((definition) => ({
+    ...definition,
+    current,
+    unlocked: current >= definition.target,
+  }));
+}
+
+export function calculateNewlyUnlockedThemeCollectionBadges(
+  previousDiscoveries: readonly ThemeDiscovery[],
+  nextDiscoveries: readonly ThemeDiscovery[],
+  questionSets: readonly QuestionSet[],
+): readonly ThemeCollectionBadge[] {
+  const previouslyUnlockedIds = new Set(
+    calculateThemeCollectionBadges(previousDiscoveries, questionSets)
+      .filter((badge) => badge.unlocked)
+      .map((badge) => badge.id),
+  );
+
+  return calculateThemeCollectionBadges(nextDiscoveries, questionSets).filter(
+    (badge) => badge.unlocked && !previouslyUnlockedIds.has(badge.id),
+  );
 }
