@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AchievementPanel } from "@/app/achievement-panel";
 import { AchievementUnlockNotice } from "@/app/achievement-unlock-notice";
 import { PlayHistoryPanel } from "@/app/play-history-panel";
+import { ThemeDiscoveryNotice } from "@/app/theme-discovery-notice";
 import { WeeklyChallengePanel } from "@/app/weekly-challenge-panel";
 import {
   calculateLocalAchievements,
@@ -29,10 +30,14 @@ import {
   buildXShareUrl,
 } from "@/lib/share";
 import {
+  calculateNewlyUnlockedThemeCollectionBadges,
+  getNewlyDiscoveredTheme,
   restoreThemeCollection,
   serializeThemeCollection,
   synchronizeThemeCollection,
   THEME_COLLECTION_STORAGE_KEY,
+  type ThemeCollectionBadge,
+  type ThemeCollectionItem,
 } from "@/lib/theme-collection";
 import { calculateWeeklyChallengeSummary } from "@/lib/weekly-challenges";
 
@@ -50,6 +55,8 @@ type HistoryInitialization = Readonly<{
   entrySignature: string;
   history: PlayHistoryEntry[];
   newlyUnlockedAchievements: readonly LocalAchievement[];
+  newlyDiscoveredTheme: ThemeCollectionItem | null;
+  newlyUnlockedCollectionBadges: readonly ThemeCollectionBadge[];
 }>;
 
 const statusMessage: Record<Exclude<ShareStatus, null>, string> = {
@@ -92,6 +99,10 @@ export function ResultSharePanel({
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<
     readonly LocalAchievement[]
   >([]);
+  const [newlyDiscoveredTheme, setNewlyDiscoveredTheme] = useState<ThemeCollectionItem | null>(null);
+  const [newlyUnlockedCollectionBadges, setNewlyUnlockedCollectionBadges] = useState<
+    readonly ThemeCollectionBadge[]
+  >([]);
   const rarityGrid = useMemo(() => buildRarityGrid(answers), [answers]);
   const rarityText = answers.map((answer) => answer.rarity).join("、");
   const shareText = useMemo(
@@ -126,11 +137,14 @@ export function ResultSharePanel({
     let initialization = historyInitializationRef.current;
 
     if (!initialization || initialization.entrySignature !== currentEntrySignature) {
+      let restoredHistory: PlayHistoryEntry[] = [];
       let nextHistory = [currentHistoryEntry];
       let unlockedAchievements: readonly LocalAchievement[] = [];
+      let discoveredTheme: ThemeCollectionItem | null = null;
+      let unlockedCollectionBadges: readonly ThemeCollectionBadge[] = [];
 
       try {
-        const restoredHistory = restorePlayHistory(
+        restoredHistory = restorePlayHistory(
           window.localStorage.getItem(PLAY_HISTORY_STORAGE_KEY),
         );
         nextHistory = upsertPlayHistory(restoredHistory, currentHistoryEntry);
@@ -153,23 +167,44 @@ export function ResultSharePanel({
           window.localStorage.getItem(THEME_COLLECTION_STORAGE_KEY),
           questionSets,
         );
-        const synchronizedCollection = synchronizeThemeCollection(
+        const previousCollection = synchronizeThemeCollection(
           restoredCollection,
-          nextHistory,
+          restoredHistory,
           questionSets,
         );
+        const nextCollection = synchronizeThemeCollection(
+          previousCollection,
+          [currentHistoryEntry],
+          questionSets,
+        );
+        const candidateTheme = getNewlyDiscoveredTheme(
+          previousCollection,
+          nextCollection,
+          currentHistoryEntry.questionSetId,
+          questionSets,
+        );
+        const candidateBadges = calculateNewlyUnlockedThemeCollectionBadges(
+          previousCollection,
+          nextCollection,
+          questionSets,
+        );
+
         window.localStorage.setItem(
           THEME_COLLECTION_STORAGE_KEY,
-          serializeThemeCollection(synchronizedCollection, questionSets),
+          serializeThemeCollection(nextCollection, questionSets),
         );
+        discoveredTheme = candidateTheme;
+        unlockedCollectionBadges = candidateBadges;
       } catch {
-        // コレクション保存に失敗しても履歴・実績・共有は継続する。
+        // コレクション保存に失敗した場合は、誤った発見・バッジ通知を出さず他機能を継続する。
       }
 
       initialization = {
         entrySignature: currentEntrySignature,
         history: nextHistory,
         newlyUnlockedAchievements: unlockedAchievements,
+        newlyDiscoveredTheme: discoveredTheme,
+        newlyUnlockedCollectionBadges: unlockedCollectionBadges,
       };
       historyInitializationRef.current = initialization;
     }
@@ -177,6 +212,8 @@ export function ResultSharePanel({
     const frameId = window.requestAnimationFrame(() => {
       setPlayHistory(initialization.history);
       setNewlyUnlockedAchievements(initialization.newlyUnlockedAchievements);
+      setNewlyDiscoveredTheme(initialization.newlyDiscoveredTheme);
+      setNewlyUnlockedCollectionBadges(initialization.newlyUnlockedCollectionBadges);
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [currentEntrySignature, currentHistoryEntry, dateKey]);
@@ -219,6 +256,11 @@ export function ResultSharePanel({
 
   return (
     <>
+      <ThemeDiscoveryNotice
+        theme={newlyDiscoveredTheme}
+        badges={newlyUnlockedCollectionBadges}
+      />
+
       <AchievementUnlockNotice achievements={newlyUnlockedAchievements} />
 
       <PlayHistoryPanel
@@ -236,10 +278,10 @@ export function ResultSharePanel({
         aria-labelledby="collection-title"
       >
         <p id="collection-title" className="font-semibold text-violet-100">
-          今日のテーマをコレクションへ登録しました
+          テーマコレクション
         </p>
         <p className="mt-2 text-sm leading-6 text-zinc-300">
-          出会ったテーマを集めて、10テーマのコンプリートを目指せます。未発見テーマの名前は図鑑でも伏せています。
+          デイリーで発見したテーマと3・5・10テーマ到達バッジを確認できます。未発見テーマの名前は図鑑でも伏せています。
         </p>
         <Link href="/collection" className="secondary-button mt-5 block w-full text-center">
           テーマコレクションを見る
