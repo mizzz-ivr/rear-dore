@@ -6,14 +6,14 @@ export const questionSets11To15: QuestionSet[] = [
     title: "乗り物・移動編",
     questions: [
       {
-        id: "train-seat-choice",
+        id: "preferred-train-seat",
         prompt: "電車で好きな場所を自由に選べる。どこに座る？",
         choices: [
-          { id: "train-seat-choice-window", label: "窓側の席", percentage: 37 },
-          { id: "train-seat-choice-aisle", label: "通路側の席", percentage: 24 },
-          { id: "train-seat-choice-door", label: "ドアに近い席", percentage: 21 },
-          { id: "train-seat-choice-stand", label: "空いていても立つ", percentage: 15 },
-          { id: "train-seat-choice-end", label: "車両のいちばん端まで行く", percentage: 3 },
+          { id: "preferred-train-seat-window", label: "窓側の席", percentage: 37 },
+          { id: "preferred-train-seat-aisle", label: "通路側の席", percentage: 24 },
+          { id: "preferred-train-seat-door", label: "ドアに近い席", percentage: 21 },
+          { id: "preferred-train-seat-stand", label: "空いていても立つ", percentage: 15 },
+          { id: "preferred-train-seat-end", label: "車両のいちばん端まで行く", percentage: 3 },
         ],
       },
       {
