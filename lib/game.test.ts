@@ -40,14 +40,34 @@ describe("getDailyQuestionSet", () => {
     ["2026-08-22", "daily-07-odd"],
     ["2026-08-23", "daily-01-imagination"],
     ["2026-08-24", "daily-02-everyday"],
-    ["2026-08-25", "daily-08-work-study"],
-  ] as const)("拡張10日サイクル%sを割り当てる", (dateKey, expected) => {
+  ] as const)("8月24日までの拡張10日サイクル%sを維持する", (dateKey, expected) => {
     expect(getDailyQuestionSet(dateKey).id).toBe(expected);
   });
 
-  it("10セット・50問を登録する", () => {
-    expect(questionSets).toHaveLength(10);
-    expect(questionSets.flatMap((set) => set.questions)).toHaveLength(50);
+  it.each([
+    ["2026-08-25", "daily-08-work-study"],
+    ["2026-08-26", "daily-11-transport"],
+    ["2026-08-27", "daily-12-shopping-money"],
+    ["2026-08-28", "daily-13-communication"],
+    ["2026-08-29", "daily-14-season-events"],
+    ["2026-08-30", "daily-15-entertainment"],
+    ["2026-08-31", "daily-09-hobbies"],
+    ["2026-09-01", "daily-10-future-tech"],
+    ["2026-09-02", "daily-03-choice"],
+    ["2026-09-03", "daily-04-digital"],
+    ["2026-09-04", "daily-05-food"],
+    ["2026-09-05", "daily-06-outing"],
+    ["2026-09-06", "daily-07-odd"],
+    ["2026-09-07", "daily-01-imagination"],
+    ["2026-09-08", "daily-02-everyday"],
+    ["2026-09-09", "daily-08-work-study"],
+  ] as const)("15日サイクル%sを割り当てる", (dateKey, expected) => {
+    expect(getDailyQuestionSet(dateKey).id).toBe(expected);
+  });
+
+  it("15セット・75問を登録する", () => {
+    expect(questionSets).toHaveLength(15);
+    expect(questionSets.flatMap((set) => set.questions)).toHaveLength(75);
     expect(questionSets.map((set) => set.id)).toEqual([
       "daily-01-imagination",
       "daily-02-everyday",
@@ -59,6 +79,11 @@ describe("getDailyQuestionSet", () => {
       "daily-08-work-study",
       "daily-09-hobbies",
       "daily-10-future-tech",
+      "daily-11-transport",
+      "daily-12-shopping-money",
+      "daily-13-communication",
+      "daily-14-season-events",
+      "daily-15-entertainment",
     ]);
   });
 
