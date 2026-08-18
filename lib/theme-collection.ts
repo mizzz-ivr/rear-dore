@@ -28,6 +28,13 @@ const COLLECTION_BADGE_DEFINITIONS = [
     description: "10テーマを発見する",
     target: 10,
   },
+  {
+    id: "discover-15",
+    icon: "🏆",
+    title: "テーマ図鑑コンプリート",
+    description: "15テーマを発見する",
+    target: 15,
+  },
 ] as const;
 
 export type ThemeDiscovery = Readonly<{
