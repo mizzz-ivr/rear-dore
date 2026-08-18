@@ -281,7 +281,7 @@ export function ResultSharePanel({
           テーマコレクション
         </p>
         <p className="mt-2 text-sm leading-6 text-zinc-300">
-          デイリーで発見したテーマと3・5・10テーマ到達バッジを確認できます。未発見テーマの名前は図鑑でも伏せています。
+          デイリーで発見したテーマと3・5・10・15テーマ到達バッジを確認できます。未発見テーマの名前は図鑑でも伏せています。
         </p>
         <Link href="/collection" className="secondary-button mt-5 block w-full text-center">
           テーマコレクションを見る
