@@ -21,7 +21,7 @@ export function ThemeCollectionBadgePanel({ badges }: ThemeCollectionBadgePanelP
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {badges.map((badge) => {
           const displayedCurrent = Math.min(badge.current, badge.target);
           const progress = (displayedCurrent / badge.target) * 100;

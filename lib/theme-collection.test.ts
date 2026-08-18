@@ -24,6 +24,12 @@ const tenQuestionSets: QuestionSet[] = Array.from({ length: 10 }, (_, index) => 
   questions: [],
 }));
 
+const fifteenQuestionSets: QuestionSet[] = Array.from({ length: 15 }, (_, index) => ({
+  id: `theme-${index + 1}`,
+  title: `テーマ${index + 1}`,
+  questions: [],
+}));
+
 function historyEntry(dateKey: string, questionSetId: string): PlayHistoryEntry {
   return {
     dateKey,
@@ -223,7 +229,7 @@ describe("getNewlyDiscoveredTheme", () => {
 });
 
 describe("calculateThemeCollectionBadges", () => {
-  it("3・5・10テーマの達成状態を現在の発見数から再計算する", () => {
+  it("10テーマ時は3・5・10テーマの達成状態だけを返す", () => {
     expect(
       calculateThemeCollectionBadges(discoveries(5), tenQuestionSets).map((badge) => ({
         id: badge.id,
@@ -235,6 +241,22 @@ describe("calculateThemeCollectionBadges", () => {
       { id: "discover-3", current: 5, target: 3, unlocked: true },
       { id: "discover-5", current: 5, target: 5, unlocked: true },
       { id: "discover-10", current: 5, target: 10, unlocked: false },
+    ]);
+  });
+
+  it("15テーマ時は最終コンプリートバッジを追加する", () => {
+    expect(
+      calculateThemeCollectionBadges(discoveries(10), fifteenQuestionSets).map((badge) => ({
+        id: badge.id,
+        current: badge.current,
+        target: badge.target,
+        unlocked: badge.unlocked,
+      })),
+    ).toEqual([
+      { id: "discover-3", current: 10, target: 3, unlocked: true },
+      { id: "discover-5", current: 10, target: 5, unlocked: true },
+      { id: "discover-10", current: 10, target: 10, unlocked: true },
+      { id: "discover-15", current: 10, target: 15, unlocked: false },
     ]);
   });
 
@@ -252,6 +274,16 @@ describe("calculateThemeCollectionBadges", () => {
         tenQuestionSets,
       ).map((badge) => badge.id),
     ).toEqual(["discover-5"]);
+  });
+
+  it("15テーマ目で最終コンプリートバッジだけ返す", () => {
+    expect(
+      calculateNewlyUnlockedThemeCollectionBadges(
+        discoveries(14),
+        discoveries(15),
+        fifteenQuestionSets,
+      ).map((badge) => badge.id),
+    ).toEqual(["discover-15"]);
   });
 
   it("すでに解除済みのバッジは再通知しない", () => {

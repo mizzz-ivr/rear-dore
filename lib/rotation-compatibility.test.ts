@@ -3,16 +3,16 @@ import { calculateDailyMissionProgress, getDailyMission } from "./daily-missions
 import { calculateResult, getDailyQuestionSet } from "./game";
 
 const DAY = 24 * 60 * 60 * 1000;
-const START = Date.UTC(2026, 7, 15);
+const START = Date.UTC(2026, 7, 25);
 
 function getDateKey(index: number): string {
   return new Date(START + index * DAY).toISOString().slice(0, 10);
 }
 
-it("10テーマと7ミッションの全組み合わせを達成可能にする", () => {
+it("15テーマと7ミッションの全組み合わせを達成可能にする", () => {
   const combinations = new Set<string>();
 
-  for (let index = 0; index < 70; index += 1) {
+  for (let index = 0; index < 105; index += 1) {
     const dateKey = getDateKey(index);
     const mission = getDailyMission(dateKey);
     const questionSet = getDailyQuestionSet(dateKey);
@@ -32,5 +32,5 @@ it("10テーマと7ミッションの全組み合わせを達成可能にする"
     combinations.add(`${questionSet.id}:${mission.id}`);
   }
 
-  expect(combinations.size).toBe(70);
+  expect(combinations.size).toBe(105);
 });
