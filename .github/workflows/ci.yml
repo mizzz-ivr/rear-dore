@@ -32,7 +32,8 @@ jobs:
           package-manager-cache: false
 
       - name: 依存関係をインストール
-        run: npm install --no-audit --no-fund
+        # npm ArboristのedgesOut例外を回避する暫定措置。lockfile導入後はnpm ciへ移行する。
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: ESLintを実行
         run: npm run lint
