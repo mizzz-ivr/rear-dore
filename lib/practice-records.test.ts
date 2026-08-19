@@ -111,6 +111,25 @@ describe("recordPracticeResult", () => {
     });
   });
 
+  it("得点が自己ベスト未満でもSR以上最高数だけ更新できる", () => {
+    const existing: PracticeThemeRecord[] = [
+      { questionSetId: "theme-a", playCount: 3, bestScore: 1700, bestRareAnswerCount: 2 },
+    ];
+
+    expect(
+      recordPracticeResult(
+        existing,
+        { questionSetId: "theme-a", totalScore: 1200, rareAnswerCount: 4 },
+        questionSets,
+      ).record,
+    ).toEqual({
+      questionSetId: "theme-a",
+      playCount: 4,
+      bestScore: 1700,
+      bestRareAnswerCount: 4,
+    });
+  });
+
   it("別テーマの記録を変更しない", () => {
     const existing: PracticeThemeRecord[] = [
       { questionSetId: "theme-a", playCount: 2, bestScore: 1000, bestRareAnswerCount: 2 },
